@@ -1,8 +1,5 @@
 package com.nfcinspector.app
 
-import android.content.Intent
-import android.nfc.NfcAdapter
-import android.nfc.Tag
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -59,9 +56,6 @@ class MainActivity : ComponentActivity() {
             }
         )
 
-        // Handle intent if launched via NFC touch
-        handleNfcIntent(intent)
-
         setContent {
             NFCInspectorTheme {
                 MainAppScaffold(viewModel = viewModel)
@@ -71,7 +65,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Automatic state check on resume / returning from settings
+        // Automatic state check on resume / returning from system settings
         val status = nfcManager.checkNfcStatus()
         viewModel.updateNfcStatus(status)
 
@@ -83,26 +77,6 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         nfcManager.stopReaderMode(this)
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handleNfcIntent(intent)
-    }
-
-    private fun handleNfcIntent(intent: Intent?) {
-        if (intent == null) return
-        val action = intent.action
-        if (NfcAdapter.ACTION_NDEF_DISCOVERED == action ||
-            NfcAdapter.ACTION_TECH_DISCOVERED == action ||
-            NfcAdapter.ACTION_TAG_DISCOVERED == action
-        ) {
-            @Suppress("DEPRECATION")
-            val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
-            if (tag != null) {
-                nfcManager.onTagDiscovered(tag)
-            }
-        }
     }
 }
 

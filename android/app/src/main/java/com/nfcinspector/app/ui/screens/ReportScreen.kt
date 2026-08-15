@@ -100,18 +100,37 @@ fun ReportScreen(
                     Text("Compartilhar", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                 }
 
+                val isSaved by viewModel.isCurrentTagSaved.collectAsState()
+                val isSaving by viewModel.isSaving.collectAsState()
+
                 Button(
                     onClick = {
-                        viewModel.saveCurrentScanManually()
-                        Toast.makeText(context, "Leitura salva no histórico local!", Toast.LENGTH_SHORT).show()
+                        viewModel.saveCurrentScanManually { alreadySaved ->
+                            if (alreadySaved) {
+                                Toast.makeText(context, "Esta leitura já está salva no histórico local.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "✓ Leitura salva no histórico local!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     },
+                    enabled = !isSaved && !isSaving,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    colors = if (isSaved) {
+                        ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                    } else {
+                        ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    }
                 ) {
-                    Icon(Icons.Outlined.Save, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Salvar", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    if (isSaved) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Salvo", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    } else {
+                        Icon(Icons.Outlined.Save, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Salvar", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 

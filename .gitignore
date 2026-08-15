@@ -1,8 +1,50 @@
-node_modules/
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
 build/
-dist/
-coverage/
-.DS_Store
+app/build/
+android/app/build/
+android/build/
+.gradle/
+android/.gradle/
+
+# Gradle files
+.gradletasknamecache
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# Keystore files
+*.jks
+*.keystore
+
+# Log files
 *.log
-.env*
-!.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+

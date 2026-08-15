@@ -1,6 +1,6 @@
 # NFC Inspector - Aplicativo Android Nativo
 
-**NFC Inspector** é um aplicativo Android nativo completo desenvolvido em **Kotlin** com **Jetpack Compose** e **Material 3**, voltado para diagnóstico técnico aprofundado, identificação e inspeção de tags e cartões NFC.
+**NFC Inspector** é um aplicativo Android nativo completo desenvolvido em **Kotlin** com **Jetpack Compose** e **Material 3**, voltado para diagnóstico técnico aprofundado, identificação e inspeção de tags e cartões NFC pertencentes ao usuário ou sob autorização.
 
 100% gratuito, offline, sem anúncios, sem rastreadores, sem telemetria e sem coleta de dados.
 
@@ -8,30 +8,42 @@
 
 ## 1. Arquitetura do Projeto
 
-O projeto segue a arquitetura recomendada pelo Google Android (**MVVM** + **Unidirectional Data Flow**):
+O projeto é estruturado seguindo rigorosamente a arquitetura recomendada pelo Google Android (**MVVM** + **Unidirectional Data Flow**):
 
 - **`com.nfcinspector.app.data.model`**:
-  - `NfcState.kt`: Modelagem dos estados do hardware (`Unsupported`, `Disabled`, `ReadyWaiting`, `TagDetected`, `ScanError`).
-  - `TechDataModels.kt`: Modelos de parâmetros para cada tecnologia (`NfcAParams`, `NfcBParams`, `IsoDepParams`, `MifareClassicParams`, `MifareUltralightParams`, `NfcFParams`, `NfcVParams`, `NdefParams`, `NdefRecordItem`).
-  - `TagRecord.kt`: Agregação dos dados da tag, formatações de UID (Hex com dois pontos, Hex contínuo, Decimal) e gerador de relatório em texto puro.
+  - `NfcState.kt`: Modelagem dos estados reativos do hardware (`Checking`, `Unsupported`, `Disabled`, `ReadyWaiting`, `TagDetected`, `ScanError`).
+  - `TechDataModels.kt`: Modelos para cada tecnologia de RF (`NfcAParams`, `NfcBParams`, `IsoDepParams`, `MifareClassicParams`, `MifareUltralightParams`, `NfcFParams`, `NfcVParams`, `NdefParams`, `NdefRecordItem`).
+  - `TagRecord.kt`: Agregação dos dados da tag, formatações de UID (Hex com dois pontos, Hex contínuo, Decimal) e gerador de relatório técnico em texto puro.
 - **`com.nfcinspector.app.data.local` & `repository`**:
   - `AppDatabase.kt`, `TagDao.kt`, `TagEntity.kt`: Persistência local utilizando **Room Database** (SQLite) para armazenamento 100% offline.
-  - `HistoryRepository.kt`: Repositório para fluxo de leituras salvas, exclusão e limpeza.
+  - `HistoryRepository.kt`: Repositório para o fluxo de leituras salvas manualmente, exclusão individual e limpeza total.
 - **`com.nfcinspector.app.nfc`**:
-  - `NfcManager.kt`: Gerenciamento do ciclo de vida com `NfcAdapter.enableReaderMode` e `disableReaderMode`, verificação de estado em `onResume`, feedback tátil (`Vibrator`/`VibrationEffect`) e intents de configurações com fallback.
-  - `NfcTagParser.kt`: Parser seguro com tratamento de exceções de desconexão para `NfcA`, `NfcB`, `IsoDep`, `Ndef`, `MifareClassic`, `MifareUltralight`, `NfcF` e `NfcV`.
-  - `nfc.lab.HceLabPlaceholder.kt`: Base arquitetural isolada para futuros experimentos de Host Card Emulation (HCE) com protocolo próprio de laboratório.
+  - `NfcManager.kt`: Gerenciamento do ciclo de vida com `NfcAdapter.enableReaderMode` e `disableReaderMode`, verificação de estado em `onResume`, feedback háptico (`VibrationEffect`) e intents de configurações do sistema com fallback.
+  - `NfcTagParser.kt`: Parser seguro com tratamento de desconexão e fechamento seguro de conexões para `NfcA`, `NfcB`, `IsoDep`, `Ndef`, `MifareClassic`, `MifareUltralight`, `NfcF` e `NfcV`.
+  - `nfc.lab.HceLabPlaceholder.kt`: Base arquitetural isolada para futuros experimentos de Host Card Emulation (HCE) com protocolo proprietário de laboratório.
 - **`com.nfcinspector.app.ui`**:
-  - `ReaderScreen.kt`: Tela principal com estados A, B e C, leitura contínua e cartões técnicos detalhados com valores em monospace.
-  - `HistoryScreen.kt`: Histórico local de leituras com busca, exclusão individual, limpeza total e atalhos para comparação.
+  - `ReaderScreen.kt`: Tela principal com estados (Verificando, Não suportado, Desativado, Pronto para leitura, Cartão detectado) e cartões técnicos detalhados com valores em monospace. Contém ação explícita de "Salvar leitura" com prevenção de duplicidade.
+  - `HistoryScreen.kt`: Histórico local de leituras salvas offline, exclusão individual, limpeza total e atalhos para comparação.
   - `CompareScreen.kt`: Comparador diferencial lado a lado entre duas leituras com destaque de equivalências e divergências.
-  - `ReportScreen.kt`: Tela de visualização de relatório completo com botões de copiar, compartilhar e salvar.
-  - `AboutScreen.kt`: Guia educacional técnico sobre NFC, UID, NDEF, ISO-DEP, MIFARE e declarações de privacidade e ética.
-  - `MainActivity.kt` & `Theme.kt`: Gerenciamento de navegação Material 3 (`NavigationBar`), suporte a tema dinâmico e tema escuro.
+  - `ReportScreen.kt`: Relatório completo com ações de copiar, compartilhar e salvar no histórico local.
+  - `AboutScreen.kt`: Guia educacional técnico sobre NFC, UID, NDEF, ISO-DEP, MIFARE e compromisso de privacidade.
+  - `MainActivity.kt` & `Theme.kt`: Gerenciamento do ciclo de vida, navegação Material 3 (`NavigationBar`), suporte a tema dinâmico e tema escuro.
 
 ---
 
-## 2. Especificações e Versões de SDK
+## 2. Fluxo de Leitura NFC (Reader Mode)
+
+O aplicativo utiliza exclusivamente o **Android NFC Reader Mode** (`enableReaderMode` / `disableReaderMode`):
+
+1. **Abertura do App**: O estado inicial é `NfcStatus.Checking` enquanto o adaptador de hardware é consultado.
+2. **NFC Desativado**: Exibe aviso com botão direto para as configurações do sistema. Ao reativar e retornar ao app, o `onResume` reavalia e entra imediatamente em `ReadyWaiting`.
+3. **Aproximação da Tag**: Callback `onTagDiscovered(Tag)` é disparado, aciona feedback tátil e extrai os parâmetros via `NfcTagParser`.
+4. **Remoção da Tag**: Caso o cartão seja afastado antes do término da leitura, uma mensagem amigável é exibida e o app continua estável.
+5. **Salvamento Manual**: As leituras **não** são salvas automaticamente no banco de dados, evitando poluição e duplicações. O usuário toca no botão "Salvar leitura" quando desejar guardar a medição no histórico.
+
+---
+
+## 3. Especificações e Versões de SDK
 
 - **Dispositivo Alvo Inicial**: Motorola Moto G50 5G (Android 12)
 - **`minSdk`**: `26` (Android 8.0 Oreo ou superior - compatibilidade total com Android 12)
@@ -47,40 +59,17 @@ O projeto segue a arquitetura recomendada pelo Google Android (**MVVM** + **Unid
 
 ---
 
-## 3. Principais APIs NFC do Android Utilizadas
-
-1. `android.nfc.NfcAdapter`:
-   - `NfcAdapter.getDefaultAdapter(context)`
-   - `adapter.isEnabled`
-   - `adapter.enableReaderMode(activity, callback, flags, extras)`
-   - `adapter.disableReaderMode(activity)`
-2. `android.nfc.Tag`:
-   - `tag.id` (extração e conversão de UID em BigInteger, Hex e Decimal)
-   - `tag.techList` (identificação de tecnologias presentes)
-3. Tecnologias de RF (`android.nfc.tech.*`):
-   - `NfcA`: `atqa`, `sak`, `timeout`, `maxTransceiveLength`
-   - `NfcB`: `applicationData`, `protocolInfo`, `timeout`, `maxTransceiveLength`
-   - `IsoDep`: `historicalBytes`, `hiLayerResponse`, `isExtendedLengthApduSupported`, `timeout`, `maxTransceiveLength`
-   - `MifareClassic`: `type`, `size`, `sectorCount`, `blockCount`
-   - `MifareUltralight`: `type`, `timeout`, `maxTransceiveLength`
-   - `NfcF`: `systemCode`, `manufacturer`, `timeout`, `maxTransceiveLength`
-   - `NfcV`: `dsfid`, `responseFlags`, `maxTransceiveLength`
-   - `Ndef`: `isWritable`, `canMakeReadOnly()`, `maxSize`, `ndefMessage`, parse de registros `RTD_TEXT`, `RTD_URI`, `TNF_MIME_MEDIA` e prefixos de URI padronizados.
-   - `NdefFormatable`: detecção de tags virgens.
-
----
-
 ## 4. Como Abrir e Compilar no Android Studio
 
 ### Passo 1: Abrir o Projeto
-1. Abra o **Android Studio** (versão Hedgehog, Iguana, Jellyfish ou superior).
+1. Abra o **Android Studio** (versão Iguana, Jellyfish, Koala ou superior).
 2. Na tela inicial, clique em **Open** (ou **File > Open**).
 3. Selecione o diretório `android` do projeto.
 4. Aguarde a sincronização inicial do Gradle (**Gradle Sync**).
 
 ### Passo 2: Gerar APK Debug
 1. No menu superior do Android Studio, clique em **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
-2. Ou execute no terminal integrado:
+2. Ou execute no terminal integrado no diretório `android`:
    ```bash
    ./gradlew assembleDebug
    ```
@@ -103,7 +92,7 @@ android/app/build/outputs/apk/debug/app-debug.apk
 5. O Android Studio compilará e instalará o aplicativo diretamente no aparelho.
 
 ### Opção B: Instalação manual do APK
-1. Transfira o arquivo `app-debug.apk` para o Moto G50 5G (via cabo USB, Google Drive ou Bluetooth).
+1. Transfira o arquivo `app-debug.apk` para o Moto G50 5G (via cabo USB, compartilhamento local ou cartão SD).
 2. No aparelho, abra o gerenciador de arquivos (ex.: Files do Google) e toque em `app-debug.apk`.
 3. Se solicitado, permita a instalação de apps de fontes desconhecidas para o gerenciador de arquivos.
 4. Toque em **Instalar** e em seguida em **Abrir**.

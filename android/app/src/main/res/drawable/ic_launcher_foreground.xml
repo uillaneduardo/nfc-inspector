@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.75"
+        android:scaleY="0.75"
+        android:translateX="13.5"
+        android:translateY="13.5">
+        <!-- NFC Waves & Chip Icon -->
+        <path
+            android:fillColor="#00E5FF"
+            android:pathData="M20,2c-1.1,0 -2,0.9 -2,2v16c0,1.1 0.9,2 2,2h12c1.1,0 2,-0.9 2,-2V4c0,-1.1 -0.9,-2 -2,-2H20zM30,18H22V6h8v12zM54,20c0,-17.67 -14.33,-32 -32,-32v4c15.46,0 28,12.54 28,28h4zM46,20c0,-13.25 -10.75,-24 -24,-24v4c11.05,0 20,8.95 20,20h4zM38,20c0,-8.84 -7.16,-16 -16,-16v4c6.63,0 12,5.37 12,12h4z" />
+    </group>
+</vector>

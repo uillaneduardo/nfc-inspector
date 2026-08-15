@@ -97,7 +97,7 @@ fun HistoryScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Aproxime um cartão ou tag na aba 'Leitor' para registrar automaticamente.",
+                        text = "Aproxime e inspecione uma tag na aba 'Leitor' e toque em 'Salvar leitura' para armazená-la offline.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )

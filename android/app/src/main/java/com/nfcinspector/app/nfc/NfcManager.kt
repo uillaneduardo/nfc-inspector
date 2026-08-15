@@ -69,7 +69,12 @@ class NfcManager(
             val record = NfcTagParser.parseTag(tag)
             onTagScanned(record)
         } catch (e: Exception) {
-            onError("Falha na comunicação com a tag: ${e.localizedMessage ?: "Tag removida precocemente"}")
+            val msg = if (e is java.io.IOException || e.javaClass.simpleName.contains("TagLost")) {
+                "A tag foi afastada antes da conclusão da leitura. Mantenha o cartão estável e tente novamente."
+            } else {
+                "Falha na comunicação com a tag: ${e.localizedMessage ?: "Erro desconhecido"}"
+            }
+            onError(msg)
         }
     }
 

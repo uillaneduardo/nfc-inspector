@@ -15,11 +15,18 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(private val repository: HistoryRepository) : ViewModel() {
 
-    private val _nfcStatus = MutableStateFlow<NfcStatus>(NfcStatus.ReadyWaiting)
+    // Initial state is Checking until hardware adapter is confirmed
+    private val _nfcStatus = MutableStateFlow<NfcStatus>(NfcStatus.Checking)
     val nfcStatus: StateFlow<NfcStatus> = _nfcStatus.asStateFlow()
 
     private val _currentTag = MutableStateFlow<TagRecord?>(null)
     val currentTag: StateFlow<TagRecord?> = _currentTag.asStateFlow()
+
+    private val _isCurrentTagSaved = MutableStateFlow(false)
+    val isCurrentTagSaved: StateFlow<Boolean> = _isCurrentTagSaved.asStateFlow()
+
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
     val historyScans: StateFlow<List<TagRecord>> = repository.allScans
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -37,11 +44,9 @@ class MainViewModel(private val repository: HistoryRepository) : ViewModel() {
 
     fun onTagScanned(tagRecord: TagRecord) {
         _currentTag.value = tagRecord
+        _isCurrentTagSaved.value = false
         _nfcStatus.value = NfcStatus.TagDetected(tagRecord)
-        // Automatically save scan to offline local database
-        viewModelScope.launch {
-            repository.saveScan(tagRecord)
-        }
+        // Note: Automatic save removed. User chooses to save manually.
     }
 
     fun onScanError(errorMessage: String) {
@@ -50,13 +55,32 @@ class MainViewModel(private val repository: HistoryRepository) : ViewModel() {
 
     fun resetToWaiting() {
         _currentTag.value = null
+        _isCurrentTagSaved.value = false
         _nfcStatus.value = NfcStatus.ReadyWaiting
     }
 
-    fun saveCurrentScanManually() {
-        _currentTag.value?.let { tag ->
-            viewModelScope.launch {
+    /**
+     * Manual save with debounce protection and visual feedback.
+     * Prevents accidental duplicates if user taps rapidly.
+     */
+    fun saveCurrentScanManually(onComplete: ((alreadySaved: Boolean) -> Unit)? = null) {
+        val tag = _currentTag.value ?: return
+
+        // Prevent rapid double-tap duplicate saves
+        if (_isSaving.value) return
+        if (_isCurrentTagSaved.value) {
+            onComplete?.invoke(true)
+            return
+        }
+
+        _isSaving.value = true
+        viewModelScope.launch {
+            try {
                 repository.saveScan(tag)
+                _isCurrentTagSaved.value = true
+                onComplete?.invoke(false)
+            } finally {
+                _isSaving.value = false
             }
         }
     }

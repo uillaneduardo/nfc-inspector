@@ -42,6 +42,8 @@ fun ReaderScreen(
     val context = LocalContext.current
     val nfcStatus by viewModel.nfcStatus.collectAsState()
     val currentTag by viewModel.currentTag.collectAsState()
+    val isSaved by viewModel.isCurrentTagSaved.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
     val scrollState = rememberScrollState()
 
     Column(
@@ -55,6 +57,9 @@ fun ReaderScreen(
 
         // Status Header Card
         when (val status = nfcStatus) {
+            is NfcStatus.Checking -> {
+                CheckingNfcCard()
+            }
             is NfcStatus.Unsupported -> {
                 UnsupportedNfcCard()
             }
@@ -138,21 +143,92 @@ fun ReaderScreen(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // Action Buttons
-            Button(
-                onClick = { onNavigateToReport(tag) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = TechBlue)
+            // Action Buttons (Save manually + View Report)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(Icons.Outlined.Description, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Ver Relatório Técnico Completo", fontWeight = FontWeight.SemiBold)
+                OutlinedButton(
+                    onClick = {
+                        viewModel.saveCurrentScanManually { alreadySaved ->
+                            if (alreadySaved) {
+                                Toast.makeText(context, "Esta leitura já está salva no histórico.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "✓ Leitura salva com sucesso no histórico!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    enabled = !isSaved && !isSaving,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = if (isSaved) {
+                        ButtonDefaults.outlinedButtonColors(
+                            containerColor = SignalGreen.copy(alpha = 0.12f),
+                            contentColor = SignalGreen
+                        )
+                    } else {
+                        ButtonDefaults.outlinedButtonColors()
+                    }
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else if (isSaved) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = SignalGreen, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Salvo", fontWeight = FontWeight.SemiBold, color = SignalGreen)
+                    } else {
+                        Icon(Icons.Outlined.BookmarkAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Salvar leitura", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                Button(
+                    onClick = { onNavigateToReport(tag) },
+                    modifier = Modifier
+                        .weight(1.3f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TechBlue)
+                ) {
+                    Icon(Icons.Outlined.Description, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Ver Relatório", fontWeight = FontWeight.SemiBold)
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun CheckingNfcCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = TechBlue
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Verificando NFC...",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
