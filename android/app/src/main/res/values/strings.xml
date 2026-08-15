@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">NFC Inspector</string>
+    <string name="nfc_status_ready">Aguardando cartão ou tag NFC...</string>
+    <string name="nfc_status_disabled_title">NFC desativado</string>
+    <string name="nfc_status_disabled_msg">Para identificar cartões e tags, é necessário ativar o NFC do aparelho.</string>
+    <string name="nfc_status_unsupported_title">NFC não disponível</string>
+    <string name="nfc_status_unsupported_msg">Este dispositivo não possui suporte a NFC ou o Android não disponibiliza um adaptador NFC compatível.</string>
+    <string name="btn_enable_nfc">Ativar NFC</string>
+    <string name="card_detected">Cartão detectado</string>
+    <string name="copy_uid">Copiar UID</string>
+    <string name="copy_report">Copiar relatório</string>
+    <string name="share_report">Compartilhar relatório</string>
+    <string name="save_scan">Salvar leitura</string>
+</resources>
