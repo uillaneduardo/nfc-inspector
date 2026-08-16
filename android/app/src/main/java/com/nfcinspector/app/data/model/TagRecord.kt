@@ -81,7 +81,7 @@ data class TagRecord(
         mifareClassic?.let {
             sb.appendLine("--- MIFARE CLASSIC ---")
             sb.appendLine("Tipo:                ${it.typeName}")
-            sb.appendLine("Capacidade:          ${it.sizeBytes} bytes (${it.sizeBytes / 1024} KB)")
+            sb.appendLine("Capacidade:          ${MifareClassicMemoryMap.formatMifareCapacity(it.sizeBytes)}")
             sb.appendLine("Setores:             ${it.sectorCount}")
             sb.appendLine("Blocos Totais:       ${it.blockCount}")
             sb.appendLine("Tamanho do Bloco:    ${it.blockSizeBytes} bytes")
@@ -99,9 +99,12 @@ data class TagRecord(
                     sb.appendLine("Setor $secNumStr (${sector.blockCount} blocos)")
                     sb.appendLine("  Status:        ${sector.status.label}")
                     if (sector.authKeyType != null) {
-                        sb.appendLine("  Autenticação:  ${sector.authKeyType}")
+                        sb.appendLine("  Tipo de Chave: ${sector.authKeyType}")
+                        if (sector.authKeyName != null) {
+                            sb.appendLine("  Nome da Chave: ${sector.authKeyName}")
+                        }
                         if (sector.authKeyUsedHex != null) {
-                            sb.appendLine("  Chave Testada: ${sector.authKeyUsedHex} (Sucesso)")
+                            sb.appendLine("  Chave Hex:     ${sector.authKeyUsedHex}")
                         }
                     }
 
@@ -125,9 +128,9 @@ data class TagRecord(
                                 sb.appendLine("    Sector Trailer: C1=${tp.c1}, C2=${tp.c2}, C3=${tp.c3}")
                                 sb.appendLine("      Key A Write: ${tp.keyAWrite} | Access Bits Read/Write: ${tp.accessBitsRead}/${tp.accessBitsWrite} | Key B Read/Write: ${tp.keyBRead}/${tp.keyBWrite}")
                             }
-                            ab.blockPermissions.firstOrNull()?.let { dp ->
-                                sb.appendLine("    Data Blocks:    C1=${dp.c1}, C2=${dp.c2}, C3=${dp.c3}")
-                                sb.appendLine("      Read: ${dp.readAccess} | Write: ${dp.writeAccess} | Inc: ${dp.incrementAccess} | Dec: ${dp.decrementTransferRestoreAccess}")
+                            ab.blockPermissions.forEach { dp ->
+                                sb.appendLine("    ${dp.blockRangeLabel}: C1=${dp.c1}, C2=${dp.c2}, C3=${dp.c3}")
+                                sb.appendLine("      Leitura: ${dp.readAccess} | Escrita: ${dp.writeAccess} | Inc: ${dp.incrementAccess} | Dec: ${dp.decrementTransferRestoreAccess}")
                             }
                         } else {
                             sb.appendLine("    Inconsistência: ${ab.inconsistencyError ?: "Inconsistente"}")

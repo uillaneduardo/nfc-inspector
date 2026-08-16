@@ -122,7 +122,7 @@ object NfcTagParser {
         return when {
             techList.contains("IsoDep") && techList.contains("NfcA") -> "ISO 14443-4A (ISO-DEP / Smart Card)"
             techList.contains("IsoDep") && techList.contains("NfcB") -> "ISO 14443-4B (ISO-DEP Type B)"
-            techList.contains("MifareClassic") -> "Tecnologia principal: MIFARE Classic"
+            techList.contains("MifareClassic") -> "MIFARE Classic"
             techList.contains("MifareUltralight") -> "MIFARE Ultralight / NTAG"
             techList.contains("NfcA") && techList.contains("Ndef") -> "NFC Forum Type 2 / Type 4 (NfcA + NDEF)"
             techList.contains("NfcA") -> "ISO 14443-3A (NFC-A)"
@@ -203,17 +203,8 @@ object NfcTagParser {
                 else -> "MIFARE Desconhecido"
             }
 
-            // Perform initial diagnostic inspection on background IO
-            val memoryMap = try {
-                MifareClassicInspector.inspectMifare(
-                    tag = tag,
-                    customKeyA = customKeyA,
-                    customKeyB = customKeyB,
-                    testDefaultKeys = true
-                ) ?: MifareClassicInspector.buildInitialStructure(mfc)
-            } catch (_: Exception) {
-                MifareClassicInspector.buildInitialStructure(mfc)
-            }
+            // Build baseline structural memory map without blocking RF authentication during initial discovery
+            val memoryMap = MifareClassicInspector.buildInitialStructure(mfc)
 
             MifareClassicParams(
                 typeName = typeStr,

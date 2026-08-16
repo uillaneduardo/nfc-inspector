@@ -659,7 +659,7 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
                     color = TechBlue.copy(alpha = 0.12f)
                 ) {
                     Text(
-                        text = "${mfc.sizeBytes / 1024} KB (${mfc.sectorCount} Setores)",
+                        text = "${com.nfcinspector.app.data.model.MifareClassicMemoryMap.formatMifareCapacityShort(mfc.sizeBytes)} (${mfc.sectorCount} Setores)",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = TechBlue,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -669,7 +669,7 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
 
             Spacer(modifier = Modifier.height(10.dp))
             TechRow("Tipo Detectado", mfc.typeName)
-            TechRow("Capacidade Total", "${mfc.sizeBytes} bytes (${mfc.sizeBytes / 1024} KB)")
+            TechRow("Capacidade Total", com.nfcinspector.app.data.model.MifareClassicMemoryMap.formatMifareCapacity(mfc.sizeBytes))
             TechRow("Quantidade de Setores", "${mfc.sectorCount}")
             TechRow("Total de Blocos", "${mfc.blockCount}")
             TechRow("Tamanho do Bloco", "${mfc.blockSizeBytes} bytes")
@@ -847,15 +847,24 @@ fun MifareSectorCard(
 
             if (sector.authKeyType != null) {
                 Spacer(modifier = Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Autenticação: ${sector.authKeyType}",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = SignalGreen
-                    )
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Autenticação: ${sector.authKeyType}",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                            color = SignalGreen
+                        )
+                        if (sector.authKeyName != null) {
+                            Text(
+                                text = " • ${sector.authKeyName}",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     if (sector.authKeyUsedHex != null) {
                         Text(
-                            text = " (Chave: ${sector.authKeyUsedHex})",
+                            text = "Chave Hex: ${sector.authKeyUsedHex}",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1023,10 +1032,10 @@ fun MifareAccessBitsView(accessBits: com.nfcinspector.app.data.model.MifareAcces
                     )
                 }
 
-                accessBits.blockPermissions.firstOrNull()?.let { bp ->
+                accessBits.blockPermissions.forEach { bp ->
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "• Blocos de Dados (C1=${bp.c1}, C2=${bp.c2}, C3=${bp.c3}):",
+                        text = "• ${bp.blockRangeLabel} (C1=${bp.c1}, C2=${bp.c2}, C3=${bp.c3}):",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     )
                     Text(

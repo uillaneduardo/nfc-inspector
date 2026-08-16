@@ -1,5 +1,7 @@
 package com.nfcinspector.app.data.model
 
+import java.util.Locale
+
 /**
  * Structural type of a MIFARE Classic block.
  */
@@ -22,10 +24,11 @@ enum class MifareSectorStatus(val label: String) {
 }
 
 /**
- * Represents access permissions for standard data blocks in a sector.
+ * Represents access permissions for data blocks (or block groups in large 4K sectors).
  */
 data class BlockAccessPermissions(
-    val blockIndexInSector: Int,
+    val blockRangeLabel: String,
+    val groupIndex: Int,
     val c1: Int,
     val c2: Int,
     val c3: Int,
@@ -104,8 +107,9 @@ data class MifareSectorData(
     val blockCount: Int,
     val firstBlockIndex: Int,
     val status: MifareSectorStatus = MifareSectorStatus.NOT_TESTED,
-    val authKeyType: String? = null, // "Key A", "Key B", etc.
-    val authKeyUsedHex: String? = null, // Hex representation of tested key that matched
+    val authKeyType: String? = null, // "Key A" ou "Key B"
+    val authKeyName: String? = null, // "Padrão de Fábrica / Transporte (NXP)", "NXP MAD", etc.
+    val authKeyUsedHex: String? = null, // Hex representation (e.g. "FFFFFFFFFFFF")
     val blocks: List<MifareBlockData> = emptyList(),
     val accessBits: MifareAccessBits? = null
 )
@@ -124,4 +128,28 @@ data class MifareClassicMemoryMap(
     val authenticatedSectorsCount: Int = 0,
     val fullyReadSectorsCount: Int = 0,
     val totalBlocksReadCount: Int = 0
-)
+) {
+    val formattedCapacity: String
+        get() = formatMifareCapacity(sizeBytes)
+
+    companion object {
+        fun formatMifareCapacity(sizeBytes: Int): String {
+            return when {
+                sizeBytes <= 0 -> "0 bytes"
+                sizeBytes < 1024 -> "$sizeBytes bytes"
+                sizeBytes % 1024 == 0 -> "${sizeBytes / 1024} KB ($sizeBytes bytes)"
+                else -> "${String.format(Locale.US, "%.1f", sizeBytes / 1024.0)} KB ($sizeBytes bytes)"
+            }
+        }
+
+        fun formatMifareCapacityShort(sizeBytes: Int): String {
+            return when {
+                sizeBytes <= 0 -> "0 B"
+                sizeBytes < 1024 -> "$sizeBytes B"
+                sizeBytes % 1024 == 0 -> "${sizeBytes / 1024} KB"
+                else -> "${String.format(Locale.US, "%.1f", sizeBytes / 1024.0)} KB"
+            }
+        }
+    }
+}
+
