@@ -20,9 +20,14 @@ object ReportExportHelper {
      */
     fun saveContentToUri(context: Context, uri: Uri, content: String): Boolean {
         return try {
-            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                outputStream.write(content.toByteArray(Charsets.UTF_8))
-                outputStream.flush()
+            val outputStream = context.contentResolver.openOutputStream(uri)
+            if (outputStream == null) {
+                Toast.makeText(context, "Erro ao abrir destino para gravação.", Toast.LENGTH_LONG).show()
+                return false
+            }
+            outputStream.use { stream ->
+                stream.write(content.toByteArray(Charsets.UTF_8))
+                stream.flush()
             }
             Toast.makeText(context, "Arquivo salvo com sucesso!", Toast.LENGTH_LONG).show()
             true

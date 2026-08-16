@@ -35,7 +35,7 @@ import com.nfcinspector.app.data.model.TagRecord
 import com.nfcinspector.app.report.ReportExportHelper
 import com.nfcinspector.app.report.ReportFormatter
 import com.nfcinspector.app.ui.screens.report.ReportVisualView
-import com.nfcinspector.app.ui.theme.SuccessGreen
+import com.nfcinspector.app.ui.theme.SignalGreen
 import com.nfcinspector.app.ui.theme.TechBlue
 import com.nfcinspector.app.ui.theme.WarningAmber
 import com.nfcinspector.app.ui.viewmodel.MainViewModel
@@ -61,7 +61,7 @@ fun ReportScreen(
         else -> "Identificação Estrutural"
     }
     val statusColor = when (inspectionStatus) {
-        "complete" -> SuccessGreen
+        "complete" -> SignalGreen
         "partial" -> WarningAmber
         else -> TechBlue
     }

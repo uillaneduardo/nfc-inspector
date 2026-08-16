@@ -291,10 +291,10 @@ private fun ReportTechChipsCard(
                                 text = "NdefFormatable",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = SuccessGreen
+                                color = SignalGreen
                             )
                         },
-                        colors = AssistChipDefaults.assistChipColors(containerColor = SuccessGreen.copy(alpha = 0.08f)),
+                        colors = AssistChipDefaults.assistChipColors(containerColor = SignalGreen.copy(alpha = 0.08f)),
                         border = null
                     )
                 }
@@ -541,7 +541,7 @@ private fun ReportNdefCard(ndef: NdefParams) {
                     onClick = {},
                     label = { Text(if (ndef.isWritable) "Gravável" else "Somente Leitura", fontSize = 11.sp) },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (ndef.isWritable) SuccessGreen.copy(alpha = 0.1f) else WarningAmber.copy(alpha = 0.1f)
+                        containerColor = if (ndef.isWritable) SignalGreen.copy(alpha = 0.1f) else WarningAmber.copy(alpha = 0.1f)
                     ),
                     border = null
                 )
@@ -698,7 +698,7 @@ private fun ReportMifareClassicSection(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = if (authRatio == 1f) SuccessGreen else if (authRatio > 0f) WarningAmber else TechBlue,
+                    color = if (authRatio == 1f) SignalGreen else if (authRatio > 0f) WarningAmber else TechBlue,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
 
@@ -724,7 +724,7 @@ private fun ReportMifareClassicSection(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = if (blocksRatio == 1f) SuccessGreen else if (blocksRatio > 0f) WarningAmber else TechBlue,
+                    color = if (blocksRatio == 1f) SignalGreen else if (blocksRatio > 0f) WarningAmber else TechBlue,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
@@ -829,7 +829,7 @@ private fun ReportSectorItem(
             sector.status == MifareSectorStatus.PARTIAL_READ
 
     val statusColor = when {
-        sector.status == MifareSectorStatus.READ_SUCCESS -> SuccessGreen
+        sector.status == MifareSectorStatus.READ_SUCCESS -> SignalGreen
         isAuthSuccess -> TechBlue
         else -> WarningAmber
     }
