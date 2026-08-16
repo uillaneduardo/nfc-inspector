@@ -1,13 +1,17 @@
 package com.nfcinspector.app.data.model
 
+import com.nfcinspector.app.domain.model.ReaderSource
 import com.nfcinspector.app.report.ReportFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 data class TagRecord(
     val id: Long = 0L,
+    val scanId: String = UUID.randomUUID().toString(),
     val timestamp: Long = System.currentTimeMillis(),
+    val readerSource: ReaderSource = ReaderSource.INTERNAL_NFC,
     val uidColonHex: String,
     val uidContinuousHex: String,
     val uidDecimal: String,
@@ -43,4 +47,5 @@ data class TagRecord(
         return ReportFormatter.getExportFileName(this, extension)
     }
 }
+
 

@@ -22,6 +22,7 @@ import com.nfcinspector.app.data.model.NfcBParams
 import com.nfcinspector.app.data.model.NfcFParams
 import com.nfcinspector.app.data.model.NfcVParams
 import com.nfcinspector.app.data.model.TagRecord
+import com.nfcinspector.app.domain.model.ReaderSource
 import com.nfcinspector.app.nfc.mifare.MifareClassicInspector
 import java.math.BigInteger
 import java.nio.charset.Charset
@@ -71,7 +72,8 @@ object NfcTagParser {
     fun parseTag(
         tag: Tag,
         customKeyA: ByteArray? = null,
-        customKeyB: ByteArray? = null
+        customKeyB: ByteArray? = null,
+        readerSource: ReaderSource = ReaderSource.INTERNAL_NFC
     ): TagRecord {
         val rawId = tag.id ?: byteArrayOf()
         val uidColonHex = toColonHex(rawId)
@@ -96,6 +98,7 @@ object NfcTagParser {
         val isNdefFormatable = NdefFormatable.get(tag) != null
 
         return TagRecord(
+            readerSource = readerSource,
             uidColonHex = uidColonHex,
             uidContinuousHex = uidContinuousHex,
             uidDecimal = uidDecimal,

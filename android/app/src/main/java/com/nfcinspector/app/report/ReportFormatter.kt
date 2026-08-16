@@ -76,8 +76,10 @@ object ReportFormatter {
         sb.appendLine("                  NFC INSPECTOR")
         sb.appendLine("          Relatório Técnico de Inspeção NFC")
         sb.appendLine("==================================================")
-        sb.appendLine("Data e Hora:        ${tag.formattedDateTime}")
-        sb.appendLine("Status da Inspeção: $inspectionStatus")
+        sb.appendLine("ID da Leitura (UUID): ${tag.scanId}")
+        sb.appendLine("Data e Hora:          ${tag.formattedDateTime}")
+        sb.appendLine("Origem da Leitura:    ${tag.readerSource.displayName}")
+        sb.appendLine("Status da Inspeção:   $inspectionStatus")
         sb.appendLine()
 
         // 1. RESUMO EXECUTIVO & IDENTIFICAÇÃO
@@ -304,9 +306,16 @@ object ReportFormatter {
 
         // 1. Versioning & Generator Metadata
         root.put("schemaVersion", 1)
+        root.put("scanId", tag.scanId)
         root.put("generator", JSONObject().apply {
             put("name", "NFC Inspector")
             put("platform", "Android")
+        })
+        root.put("reader", JSONObject().apply {
+            put("source", tag.readerSource.sourceType.wireName)
+            put("name", tag.readerSource.readerName)
+            put("transport", tag.readerSource.transport)
+            if (tag.readerSource.readerId != null) put("id", tag.readerSource.readerId)
         })
         root.put("capturedAt", formatIso8601(tag.timestamp))
         root.put("capturedAtTimestamp", tag.timestamp)

@@ -1,5 +1,6 @@
 package com.nfcinspector.app.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -7,7 +8,15 @@ import androidx.room.PrimaryKey
 data class TagEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    @ColumnInfo(name = "scanUuid", defaultValue = "")
+    val scanUuid: String = "",
     val timestamp: Long,
+    @ColumnInfo(name = "readerSourceType", defaultValue = "ANDROID_NFC")
+    val readerSourceType: String = "ANDROID_NFC",
+    @ColumnInfo(name = "readerName", defaultValue = "NFC Interno Android")
+    val readerName: String = "NFC Interno Android",
+    @ColumnInfo(name = "readerId", defaultValue = "internal_android_adapter")
+    val readerId: String = "internal_android_adapter",
     val uidColonHex: String,
     val uidContinuousHex: String,
     val uidDecimal: String,
@@ -25,3 +34,4 @@ data class TagEntity(
     val isNdefFormatable: Boolean,
     val fullReport: String
 )
+

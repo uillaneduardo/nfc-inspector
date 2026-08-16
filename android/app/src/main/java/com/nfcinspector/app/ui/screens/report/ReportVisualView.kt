@@ -180,9 +180,11 @@ private fun ReportSummaryCard(
 
             // Tabela com detalhes do UID e Tecnologia
             ReportMetricRow(label = "Tecnologia Principal", value = tag.mainTechnology)
+            ReportMetricRow(label = "Origem da Leitura", value = tag.readerSource.displayName)
             ReportMetricRow(label = "UID Hex Contínuo", value = tag.uidContinuousHex, isMonospace = true)
             ReportMetricRow(label = "UID Decimal", value = tag.uidDecimal, isMonospace = true)
             ReportMetricRow(label = "Tamanho do UID", value = "${tag.uidLengthBytes} bytes (${tag.uidLengthBytes * 8} bits)")
+            ReportMetricRow(label = "ID da Leitura (UUID)", value = tag.scanId, isMonospace = true)
 
             tag.mifareClassic?.let { mfc ->
                 ReportMetricRow(

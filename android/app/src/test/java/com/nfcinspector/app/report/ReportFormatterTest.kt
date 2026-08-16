@@ -101,6 +101,8 @@ class ReportFormatterTest {
 
         assertTrue(report.contains("NFC INSPECTOR"))
         assertTrue(report.contains("Relatório Técnico de Inspeção NFC"))
+        assertTrue(report.contains("ID da Leitura (UUID):"))
+        assertTrue(report.contains("Origem da Leitura:    NFC Interno Android"))
         assertTrue(report.contains("04:5A:B2:1A"))
         assertTrue(report.contains("045AB21A"))
         assertTrue(report.contains("73052698"))
@@ -149,10 +151,17 @@ class ReportFormatterTest {
 
         val json = JSONObject(jsonStr)
         assertEquals(1, json.getInt("schemaVersion"))
+        assertTrue(json.has("scanId"))
+        assertNotNull(json.getString("scanId"))
 
         val generator = json.getJSONObject("generator")
         assertEquals("NFC Inspector", generator.getString("name"))
         assertEquals("Android", generator.getString("platform"))
+
+        val reader = json.getJSONObject("reader")
+        assertEquals("android_nfc", reader.getString("source"))
+        assertEquals("NFC Interno Android", reader.getString("name"))
+        assertEquals("android_nfc", reader.getString("transport"))
 
         assertTrue(json.has("capturedAt"))
         assertTrue(json.has("inspectionStatus"))

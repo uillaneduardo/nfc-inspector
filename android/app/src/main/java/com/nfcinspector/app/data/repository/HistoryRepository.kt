@@ -4,8 +4,11 @@ import com.nfcinspector.app.data.local.TagDao
 import com.nfcinspector.app.data.local.TagEntity
 import com.nfcinspector.app.data.local.TechSerializer
 import com.nfcinspector.app.data.model.TagRecord
+import com.nfcinspector.app.domain.model.ReaderSource
+import com.nfcinspector.app.domain.model.ReaderSourceType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 class HistoryRepository(private val tagDao: TagDao) {
 
@@ -21,7 +24,11 @@ class HistoryRepository(private val tagDao: TagDao) {
     suspend fun saveScan(record: TagRecord): Long {
         val entity = TagEntity(
             id = record.id,
+            scanUuid = record.scanId,
             timestamp = record.timestamp,
+            readerSourceType = record.readerSource.sourceType.name,
+            readerName = record.readerSource.readerName,
+            readerId = record.readerSource.readerId ?: "internal_android_adapter",
             uidColonHex = record.uidColonHex,
             uidContinuousHex = record.uidContinuousHex,
             uidDecimal = record.uidDecimal,
@@ -51,9 +58,25 @@ class HistoryRepository(private val tagDao: TagDao) {
     }
 
     private fun mapEntityToRecord(entity: TagEntity): TagRecord {
+        // Safe backward-compatible fallback for scanId: if empty on legacy records, generate deterministic UUID
+        val stableScanId = if (entity.scanUuid.isNotBlank()) {
+            entity.scanUuid
+        } else {
+            UUID.nameUUIDFromBytes("legacy_${entity.id}_${entity.timestamp}".toByteArray()).toString()
+        }
+
+        val readerSource = ReaderSource(
+            sourceType = ReaderSourceType.fromDbString(entity.readerSourceType),
+            readerName = entity.readerName.ifBlank { "NFC Interno Android" },
+            readerId = entity.readerId.ifBlank { "internal_android_adapter" },
+            transport = if (entity.readerSourceType == "USB") "usb" else "android_nfc"
+        )
+
         return TagRecord(
             id = entity.id,
+            scanId = stableScanId,
             timestamp = entity.timestamp,
+            readerSource = readerSource,
             uidColonHex = entity.uidColonHex,
             uidContinuousHex = entity.uidContinuousHex,
             uidDecimal = entity.uidDecimal,
@@ -72,4 +95,5 @@ class HistoryRepository(private val tagDao: TagDao) {
         )
     }
 }
+
 
