@@ -22,6 +22,17 @@ class NfcManager(
 
     private val nfcAdapter: NfcAdapter? = NfcAdapter.getDefaultAdapter(context)
 
+    @Volatile
+    var customKeyA: ByteArray? = null
+
+    @Volatile
+    var customKeyB: ByteArray? = null
+
+    fun setCustomDiagnosticKeys(keyA: ByteArray?, keyB: ByteArray?) {
+        customKeyA = keyA
+        customKeyB = keyB
+    }
+
     fun checkNfcStatus(): NfcStatus {
         if (nfcAdapter == null) {
             return NfcStatus.Unsupported
@@ -66,7 +77,7 @@ class NfcManager(
         if (tag == null) return
         triggerHapticFeedback()
         try {
-            val record = NfcTagParser.parseTag(tag)
+            val record = NfcTagParser.parseTag(tag, customKeyA, customKeyB)
             onTagScanned(record)
         } catch (e: Exception) {
             val msg = if (e is java.io.IOException || e.javaClass.simpleName.contains("TagLost")) {

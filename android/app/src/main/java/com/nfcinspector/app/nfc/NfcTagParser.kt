@@ -22,6 +22,7 @@ import com.nfcinspector.app.data.model.NfcBParams
 import com.nfcinspector.app.data.model.NfcFParams
 import com.nfcinspector.app.data.model.NfcVParams
 import com.nfcinspector.app.data.model.TagRecord
+import com.nfcinspector.app.nfc.mifare.MifareClassicInspector
 import java.math.BigInteger
 import java.nio.charset.Charset
 import java.util.Locale
@@ -67,7 +68,11 @@ object NfcTagParser {
         0x23.toByte() to "urn:nfc:"
     )
 
-    fun parseTag(tag: Tag): TagRecord {
+    fun parseTag(
+        tag: Tag,
+        customKeyA: ByteArray? = null,
+        customKeyB: ByteArray? = null
+    ): TagRecord {
         val rawId = tag.id ?: byteArrayOf()
         val uidColonHex = toColonHex(rawId)
         val uidContinuousHex = toContinuousHex(rawId)
@@ -83,7 +88,7 @@ object NfcTagParser {
         val nfcAParams = parseNfcA(tag)
         val nfcBParams = parseNfcB(tag)
         val isoDepParams = parseIsoDep(tag)
-        val mifareClassicParams = parseMifareClassic(tag)
+        val mifareClassicParams = parseMifareClassic(tag, customKeyA, customKeyB)
         val mifareUltralightParams = parseMifareUltralight(tag)
         val nfcFParams = parseNfcF(tag)
         val nfcVParams = parseNfcV(tag)
@@ -117,8 +122,8 @@ object NfcTagParser {
         return when {
             techList.contains("IsoDep") && techList.contains("NfcA") -> "ISO 14443-4A (ISO-DEP / Smart Card)"
             techList.contains("IsoDep") && techList.contains("NfcB") -> "ISO 14443-4B (ISO-DEP Type B)"
-            techList.contains("MifareClassic") -> "NXP MIFARE Classic"
-            techList.contains("MifareUltralight") -> "NXP MIFARE Ultralight / NTAG"
+            techList.contains("MifareClassic") -> "Tecnologia principal: MIFARE Classic"
+            techList.contains("MifareUltralight") -> "MIFARE Ultralight / NTAG"
             techList.contains("NfcA") && techList.contains("Ndef") -> "NFC Forum Type 2 / Type 4 (NfcA + NDEF)"
             techList.contains("NfcA") -> "ISO 14443-3A (NFC-A)"
             techList.contains("NfcB") -> "ISO 14443-3B (NFC-B)"
@@ -135,9 +140,11 @@ object NfcTagParser {
             val sak = nfcA.sak
             val timeout = nfcA.timeout
             val maxTransceive = nfcA.maxTransceiveLength
+            val atqaSpaced = atqa.joinToString(" ") { String.format(Locale.US, "%02X", it) }
+            val sakFormatted = String.format(Locale.US, "%02X", sak)
             NfcAParams(
-                atqaHex = "0x" + toContinuousHex(atqa),
-                sakHex = String.format(Locale.US, "0x%02X", sak),
+                atqaHex = atqaSpaced,
+                sakHex = sakFormatted,
                 timeoutMs = timeout,
                 maxTransceiveBytes = maxTransceive
             )
@@ -182,20 +189,39 @@ object NfcTagParser {
         }
     }
 
-    private fun parseMifareClassic(tag: Tag): MifareClassicParams? {
+    private fun parseMifareClassic(
+        tag: Tag,
+        customKeyA: ByteArray? = null,
+        customKeyB: ByteArray? = null
+    ): MifareClassicParams? {
         val mfc = MifareClassic.get(tag) ?: return null
         return try {
             val typeStr = when (mfc.type) {
                 MifareClassic.TYPE_CLASSIC -> "MIFARE Classic Standard"
-                MifareClassic.TYPE_PLUS -> "MIFARE Plus"
+                MifareClassic.TYPE_PLUS -> "MIFARE Plus (SL1 emulado)"
                 MifareClassic.TYPE_PRO -> "MIFARE Pro"
                 else -> "MIFARE Desconhecido"
             }
+
+            // Perform initial diagnostic inspection on background IO
+            val memoryMap = try {
+                MifareClassicInspector.inspectMifare(
+                    tag = tag,
+                    customKeyA = customKeyA,
+                    customKeyB = customKeyB,
+                    testDefaultKeys = true
+                ) ?: MifareClassicInspector.buildInitialStructure(mfc)
+            } catch (_: Exception) {
+                MifareClassicInspector.buildInitialStructure(mfc)
+            }
+
             MifareClassicParams(
                 typeName = typeStr,
                 sizeBytes = mfc.size,
                 sectorCount = mfc.sectorCount,
-                blockCount = mfc.blockCount
+                blockCount = mfc.blockCount,
+                blockSizeBytes = MifareClassic.BLOCK_SIZE,
+                memoryMap = memoryMap
             )
         } catch (e: Exception) {
             null

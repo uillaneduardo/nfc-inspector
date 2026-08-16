@@ -625,24 +625,426 @@ fun NdefDetailCard(ndef: com.nfcinspector.app.data.model.NdefParams) {
 
 @Composable
 fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicParams) {
+    val context = LocalContext.current
+    var isExpandedMap by remember { mutableStateOf(true) }
+    var selectedSectorFilter by remember { mutableStateOf(0) } // 0: Todos, 1: Autenticados, 2: Falhas
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("MIFARE Classic", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = TechBlue))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Memory,
+                        contentDescription = null,
+                        tint = TechBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "MIFARE Classic",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = TechBlue)
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = TechBlue.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = "${mfc.sizeBytes / 1024} KB (${mfc.sectorCount} Setores)",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = TechBlue,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
             TechRow("Tipo Detectado", mfc.typeName)
-            TechRow("Tamanho", "${mfc.sizeBytes} bytes")
-            TechRow("Setores", "${mfc.sectorCount}")
-            TechRow("Blocos", "${mfc.blockCount}")
-            Spacer(modifier = Modifier.height(6.dp))
+            TechRow("Capacidade Total", "${mfc.sizeBytes} bytes (${mfc.sizeBytes / 1024} KB)")
+            TechRow("Quantidade de Setores", "${mfc.sectorCount}")
+            TechRow("Total de Blocos", "${mfc.blockCount}")
+            TechRow("Tamanho do Bloco", "${mfc.blockSizeBytes} bytes")
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = "ℹ " + mfc.note,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Memory map inspection section
+            mfc.memoryMap?.let { map ->
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Mapa Estrutural da Memória",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "${map.authenticatedSectorsCount}/${map.sectorCount} setores autenticados • ${map.totalBlocksReadCount}/${map.blockCount} blocos lidos",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    IconButton(onClick = { isExpandedMap = !isExpandedMap }) {
+                        Icon(
+                            imageVector = if (isExpandedMap) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (isExpandedMap) "Recolher" else "Expandir"
+                        )
+                    }
+                }
+
+                if (isExpandedMap) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Filter chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        FilterChip(
+                            selected = selectedSectorFilter == 0,
+                            onClick = { selectedSectorFilter = 0 },
+                            label = { Text("Todos (${map.sectors.size})", style = MaterialTheme.typography.labelSmall) }
+                        )
+                        FilterChip(
+                            selected = selectedSectorFilter == 1,
+                            onClick = { selectedSectorFilter = 1 },
+                            label = { Text("Autenticados (${map.authenticatedSectorsCount})", style = MaterialTheme.typography.labelSmall) }
+                        )
+                        FilterChip(
+                            selected = selectedSectorFilter == 2,
+                            onClick = { selectedSectorFilter = 2 },
+                            label = { Text("Falhas (${map.sectorCount - map.authenticatedSectorsCount})", style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Notice on offline diagnostic keys
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f))
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = "Diagnóstico 100% Offline: Autenticação testada exclusivamente com chaves padrão conhecidas de fábrica/diagnóstico. Nenhuma chave é extraída da tag.",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val filteredSectors = when (selectedSectorFilter) {
+                        1 -> map.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ }
+                        2 -> map.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_FAILED || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.NOT_TESTED }
+                        else -> map.sectors
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        filteredSectors.forEach { sector ->
+                            MifareSectorCard(
+                                sector = sector,
+                                onCopyBlock = { blockLabel, hex ->
+                                    copyToClipboard(context, blockLabel, hex)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MifareSectorCard(
+    sector: com.nfcinspector.app.data.model.MifareSectorData,
+    onCopyBlock: (String, String) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || sector.sectorIndex == 0) }
+
+    val statusColor = when (sector.status) {
+        com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS -> SignalGreen
+        com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A -> TechBlue
+        com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B -> TechBlue
+        com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ -> WarningOrange
+        com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_FAILED -> MaterialTheme.colorScheme.onSurfaceVariant
+        com.nfcinspector.app.data.model.MifareSectorStatus.NOT_TESTED -> MaterialTheme.colorScheme.outline
+    }
+
+    val statusBg = statusColor.copy(alpha = 0.12f)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val secFormatted = String.format(Locale.US, "Setor %02d", sector.sectorIndex)
+                    Text(
+                        text = secFormatted,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "(${sector.blockCount} blocos: #${sector.firstBlockIndex}..#${sector.firstBlockIndex + sector.blockCount - 1})",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = statusBg
+                ) {
+                    Text(
+                        text = sector.status.label,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = statusColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            if (sector.authKeyType != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Autenticação: ${sector.authKeyType}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = SignalGreen
+                    )
+                    if (sector.authKeyUsedHex != null) {
+                        Text(
+                            text = " (Chave: ${sector.authKeyUsedHex})",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    sector.blocks.forEach { block ->
+                        MifareBlockItem(
+                            block = block,
+                            onCopy = { onCopyBlock("Bloco ${block.blockIndex}", block.hexFormatted) }
+                        )
+                    }
+                }
+
+                // Access bits interpretation if available
+                sector.accessBits?.let { ab ->
+                    Spacer(modifier = Modifier.height(10.dp))
+                    MifareAccessBitsView(ab)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MifareBlockItem(
+    block: com.nfcinspector.app.data.model.MifareBlockData,
+    onCopy: () -> Unit
+) {
+    val (typeBadgeColor, typeBadgeBg) = when (block.blockType) {
+        com.nfcinspector.app.data.model.MifareBlockType.MANUFACTURER -> WarningOrange to WarningOrange.copy(alpha = 0.15f)
+        com.nfcinspector.app.data.model.MifareBlockType.DATA -> TechBlue to TechBlue.copy(alpha = 0.15f)
+        com.nfcinspector.app.data.model.MifareBlockType.SECTOR_TRAILER -> Color(0xFF8B5CF6) to Color(0xFF8B5CF6).copy(alpha = 0.15f)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(8.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val blkLabel = String.format(Locale.US, "Bloco %02d", block.blockIndex)
+                    Text(
+                        text = blkLabel,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = typeBadgeBg
+                    ) {
+                        Text(
+                            text = block.blockType.label,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                            color = typeBadgeColor,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                        )
+                    }
+                }
+
+                if (block.isReadSuccess) {
+                    IconButton(
+                        onClick = onCopy,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ContentCopy,
+                            contentDescription = "Copiar Hex do Bloco",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            if (block.isReadSuccess) {
+                Text(
+                    text = "HEX:   " + block.hexFormatted,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "ASCII: " + block.asciiFormatted,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Text(
+                    text = "[Não lido / Protegido por Chave]",
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MifareAccessBitsView(accessBits: com.nfcinspector.app.data.model.MifareAccessBits) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(8.dp)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Interpretação dos Access Bits",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = if (accessBits.isValid) SignalGreen.copy(alpha = 0.15f) else Color(0xFFEF4444).copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = if (accessBits.isValid) "Bits Válidos" else "Bits Inconsistentes",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                        color = if (accessBits.isValid) SignalGreen else Color(0xFFEF4444),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "ℹ " + mfc.note,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                text = "Bytes (6,7,8): ${accessBits.rawBytesHex}  |  GPB (Byte 9): ${accessBits.gpbHex ?: "N/A"}",
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (accessBits.isValid) {
+                accessBits.trailerPermissions?.let { tp ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "• Sector Trailer (C1=${tp.c1}, C2=${tp.c2}, C3=${tp.c3}):",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    )
+                    Text(
+                        text = "  Key A Read: ${tp.keyARead} | Key A Write: ${tp.keyAWrite}\n  Access Bits Read: ${tp.accessBitsRead} | Access Bits Write: ${tp.accessBitsWrite}\n  Key B Read: ${tp.keyBRead} | Key B Write: ${tp.keyBWrite}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                accessBits.blockPermissions.firstOrNull()?.let { bp ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "• Blocos de Dados (C1=${bp.c1}, C2=${bp.c2}, C3=${bp.c3}):",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    )
+                    Text(
+                        text = "  Leitura: ${bp.readAccess} | Escrita: ${bp.writeAccess}\n  Incremento: ${bp.incrementAccess} | Decremento/Transfer/Restore: ${bp.decrementTransferRestoreAccess}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                accessBits.inconsistencyError?.let { err ->
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "⚠ $err",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = Color(0xFFEF4444)
+                    )
+                }
+            }
         }
     }
 }

@@ -26,6 +26,8 @@ data class MifareClassicParams(
     val sizeBytes: Int,
     val sectorCount: Int,
     val blockCount: Int,
+    val blockSizeBytes: Int = 16,
+    val memoryMap: MifareClassicMemoryMap? = null,
     val note: String = "Suporte ao MIFARE Classic depende do chipset NFC do aparelho (NXP). A ausência dessa tecnologia na API não descarta que o cartão seja MIFARE."
 )
 

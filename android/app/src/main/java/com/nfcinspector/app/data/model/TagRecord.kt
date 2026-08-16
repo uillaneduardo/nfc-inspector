@@ -81,11 +81,61 @@ data class TagRecord(
         mifareClassic?.let {
             sb.appendLine("--- MIFARE CLASSIC ---")
             sb.appendLine("Tipo:                ${it.typeName}")
-            sb.appendLine("Tamanho:             ${it.sizeBytes} bytes")
+            sb.appendLine("Capacidade:          ${it.sizeBytes} bytes (${it.sizeBytes / 1024} KB)")
             sb.appendLine("Setores:             ${it.sectorCount}")
-            sb.appendLine("Blocos:              ${it.blockCount}")
+            sb.appendLine("Blocos Totais:       ${it.blockCount}")
+            sb.appendLine("Tamanho do Bloco:    ${it.blockSizeBytes} bytes")
             sb.appendLine("Nota:                ${it.note}")
             sb.appendLine()
+
+            it.memoryMap?.let { map ->
+                sb.appendLine("--- MAPA DE MEMÓRIA MIFARE CLASSIC ---")
+                sb.appendLine("Setores Autenticados: ${map.authenticatedSectorsCount} / ${map.sectorCount}")
+                sb.appendLine("Blocos Lidos:         ${map.totalBlocksReadCount} / ${map.blockCount}")
+                sb.appendLine()
+
+                map.sectors.forEach { sector ->
+                    val secNumStr = String.format(Locale.US, "%02d", sector.sectorIndex)
+                    sb.appendLine("Setor $secNumStr (${sector.blockCount} blocos)")
+                    sb.appendLine("  Status:        ${sector.status.label}")
+                    if (sector.authKeyType != null) {
+                        sb.appendLine("  Autenticação:  ${sector.authKeyType}")
+                        if (sector.authKeyUsedHex != null) {
+                            sb.appendLine("  Chave Testada: ${sector.authKeyUsedHex} (Sucesso)")
+                        }
+                    }
+
+                    sector.blocks.forEach { block ->
+                        val blkNumStr = String.format(Locale.US, "%02d", block.blockIndex)
+                        val typeLabel = block.blockType.label
+                        sb.appendLine("  Bloco $blkNumStr — $typeLabel")
+                        if (block.isReadSuccess) {
+                            sb.appendLine("    HEX:   ${block.hexFormatted}")
+                            sb.appendLine("    ASCII: ${block.asciiFormatted}")
+                        } else {
+                            sb.appendLine("    HEX:   [Não lido / Protegido]")
+                        }
+                    }
+
+                    sector.accessBits?.let { ab ->
+                        sb.appendLine("  [Bits de Acesso]")
+                        sb.appendLine("    Bytes Brutos:  ${ab.rawBytesHex} | GPB: ${ab.gpbHex ?: "N/A"}")
+                        if (ab.isValid) {
+                            ab.trailerPermissions?.let { tp ->
+                                sb.appendLine("    Sector Trailer: C1=${tp.c1}, C2=${tp.c2}, C3=${tp.c3}")
+                                sb.appendLine("      Key A Write: ${tp.keyAWrite} | Access Bits Read/Write: ${tp.accessBitsRead}/${tp.accessBitsWrite} | Key B Read/Write: ${tp.keyBRead}/${tp.keyBWrite}")
+                            }
+                            ab.blockPermissions.firstOrNull()?.let { dp ->
+                                sb.appendLine("    Data Blocks:    C1=${dp.c1}, C2=${dp.c2}, C3=${dp.c3}")
+                                sb.appendLine("      Read: ${dp.readAccess} | Write: ${dp.writeAccess} | Inc: ${dp.incrementAccess} | Dec: ${dp.decrementTransferRestoreAccess}")
+                            }
+                        } else {
+                            sb.appendLine("    Inconsistência: ${ab.inconsistencyError ?: "Inconsistente"}")
+                        }
+                    }
+                    sb.appendLine()
+                }
+            }
         }
 
         mifareUltralight?.let {
@@ -139,7 +189,7 @@ data class TagRecord(
 
         if (isNdefFormatable && ndef == null) {
             sb.appendLine("--- NDEF FORMATABLE ---")
-            sb.appendLine("Tag virgem ou pronta para formatação NDEF.")
+            sb.appendLine("Tag compatível com formatação NDEF. Nenhuma estrutura NDEF válida foi detectada.")
             sb.appendLine()
         }
 
