@@ -886,7 +886,7 @@ fun MifareClassicDetailCard(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     val filteredSectors = when (selectedSectorFilter) {
-                        1 -> memoryMap.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTHENTICATED_READ }
+                        1 -> memoryMap.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ }
                         2 -> memoryMap.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_FAILED || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.NOT_TESTED }
                         else -> memoryMap.sectors
                     }
@@ -915,8 +915,7 @@ fun MifareSectorCard(
     var isExpanded by remember { mutableStateOf(sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || sector.sectorIndex == 0) }
 
     val statusColor = when (sector.status) {
-        com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS,
-        com.nfcinspector.app.data.model.MifareSectorStatus.AUTHENTICATED_READ -> SignalGreen
+        com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS -> SignalGreen
         com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A -> TechBlue
         com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B -> TechBlue
         com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ -> WarningOrange
@@ -984,7 +983,7 @@ fun MifareSectorCard(
                             )
                         }
                     }
-                    val resultado = if (sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTHENTICATED_READ) "sucesso" else sector.status.label
+                    val resultado = if (sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ) "sucesso" else sector.status.label
                     Text(
                         text = "Resultado: $resultado",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),

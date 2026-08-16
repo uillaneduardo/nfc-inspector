@@ -103,7 +103,7 @@ data class TagRecord(
                         if (sector.authKeyName != null) {
                             sb.appendLine("  Chave:         ${sector.authKeyName}")
                         }
-                        val resultado = if (sector.status == MifareSectorStatus.READ_SUCCESS || sector.status == MifareSectorStatus.AUTH_KEY_A || sector.status == MifareSectorStatus.AUTH_KEY_B || sector.status == MifareSectorStatus.PARTIAL_READ || sector.status == MifareSectorStatus.AUTHENTICATED_READ) "sucesso" else sector.status.label
+                        val resultado = if (sector.status == MifareSectorStatus.READ_SUCCESS || sector.status == MifareSectorStatus.AUTH_KEY_A || sector.status == MifareSectorStatus.AUTH_KEY_B || sector.status == MifareSectorStatus.PARTIAL_READ) "sucesso" else sector.status.label
                         sb.appendLine("  Resultado:     $resultado")
                     }
 
