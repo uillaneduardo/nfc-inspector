@@ -2,6 +2,7 @@ package com.nfcinspector.app.data.repository
 
 import com.nfcinspector.app.data.local.TagDao
 import com.nfcinspector.app.data.local.TagEntity
+import com.nfcinspector.app.data.local.TechSerializer
 import com.nfcinspector.app.data.model.TagRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -9,23 +10,17 @@ import kotlinx.coroutines.flow.map
 class HistoryRepository(private val tagDao: TagDao) {
 
     val allScans: Flow<List<TagRecord>> = tagDao.getAllTags().map { entities ->
-        entities.map { entity ->
-            TagRecord(
-                id = entity.id,
-                timestamp = entity.timestamp,
-                uidColonHex = entity.uidColonHex,
-                uidContinuousHex = entity.uidContinuousHex,
-                uidDecimal = entity.uidDecimal,
-                uidLengthBytes = entity.uidLengthBytes,
-                mainTechnology = entity.mainTechnology,
-                technologies = if (entity.technologiesCsv.isNotBlank()) entity.technologiesCsv.split(",") else emptyList(),
-                isNdefFormatable = entity.isNdefFormatable
-            )
-        }
+        entities.map { entity -> mapEntityToRecord(entity) }
+    }
+
+    suspend fun getScanById(id: Long): TagRecord? {
+        val entity = tagDao.getTagById(id) ?: return null
+        return mapEntityToRecord(entity)
     }
 
     suspend fun saveScan(record: TagRecord): Long {
         val entity = TagEntity(
+            id = record.id,
             timestamp = record.timestamp,
             uidColonHex = record.uidColonHex,
             uidContinuousHex = record.uidContinuousHex,
@@ -33,14 +28,14 @@ class HistoryRepository(private val tagDao: TagDao) {
             uidLengthBytes = record.uidLengthBytes,
             mainTechnology = record.mainTechnology,
             technologiesCsv = record.technologies.joinToString(","),
-            nfcAJson = null,
-            nfcBJson = null,
-            isoDepJson = null,
-            mifareClassicJson = null,
-            mifareUltralightJson = null,
-            nfcFJson = null,
-            nfcVJson = null,
-            ndefJson = null,
+            nfcAJson = TechSerializer.serializeNfcA(record.nfcA),
+            nfcBJson = TechSerializer.serializeNfcB(record.nfcB),
+            isoDepJson = TechSerializer.serializeIsoDep(record.isoDep),
+            mifareClassicJson = TechSerializer.serializeMifareClassic(record.mifareClassic),
+            mifareUltralightJson = TechSerializer.serializeMifareUltralight(record.mifareUltralight),
+            nfcFJson = TechSerializer.serializeNfcF(record.nfcF),
+            nfcVJson = TechSerializer.serializeNfcV(record.nfcV),
+            ndefJson = TechSerializer.serializeNdef(record.ndef),
             isNdefFormatable = record.isNdefFormatable,
             fullReport = record.generateFullReport()
         )
@@ -54,4 +49,27 @@ class HistoryRepository(private val tagDao: TagDao) {
     suspend fun deleteAllScans() {
         tagDao.deleteAllTags()
     }
+
+    private fun mapEntityToRecord(entity: TagEntity): TagRecord {
+        return TagRecord(
+            id = entity.id,
+            timestamp = entity.timestamp,
+            uidColonHex = entity.uidColonHex,
+            uidContinuousHex = entity.uidContinuousHex,
+            uidDecimal = entity.uidDecimal,
+            uidLengthBytes = entity.uidLengthBytes,
+            mainTechnology = entity.mainTechnology,
+            technologies = if (entity.technologiesCsv.isNotBlank()) entity.technologiesCsv.split(",") else emptyList(),
+            nfcA = TechSerializer.deserializeNfcA(entity.nfcAJson),
+            nfcB = TechSerializer.deserializeNfcB(entity.nfcBJson),
+            isoDep = TechSerializer.deserializeIsoDep(entity.isoDepJson),
+            mifareClassic = TechSerializer.deserializeMifareClassic(entity.mifareClassicJson),
+            mifareUltralight = TechSerializer.deserializeMifareUltralight(entity.mifareUltralightJson),
+            nfcF = TechSerializer.deserializeNfcF(entity.nfcFJson),
+            nfcV = TechSerializer.deserializeNfcV(entity.nfcVJson),
+            ndef = TechSerializer.deserializeNdef(entity.ndefJson),
+            isNdefFormatable = entity.isNdefFormatable
+        )
+    }
 }
+
