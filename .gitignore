@@ -50,3 +50,12 @@ local.properties
 .DS_Store
 Thumbs.db
 
+# AI Preview Artifacts (AI Studio)
+ai-preview/node_modules/
+ai-preview/dist/
+ai-preview/.vite/
+ai-preview/.cache/
+node_modules/
+dist/
+.vite/
+

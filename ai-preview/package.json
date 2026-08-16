@@ -1,13 +1,13 @@
 {
-  "name": "nfc-inspector",
+  "name": "nfc-inspector-preview",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite ai-preview --config ai-preview/vite.config.ts",
-    "build": "vite build ai-preview --config ai-preview/vite.config.ts",
-    "lint": "tsc --project ai-preview/tsconfig.json --noEmit",
-    "preview": "vite preview ai-preview"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "tsc --noEmit",
+    "preview": "vite preview"
   },
   "dependencies": {
     "lucide-react": "^1.16.0",
