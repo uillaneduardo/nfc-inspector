@@ -55,18 +55,20 @@ enum class ReaderSourceType(val displayName: String, val wireName: String) {
 }
 ```
 
+A reconstrução a partir do banco de dados ou payload externo é centralizada em `ReaderSource.fromPersisted(...)`, garantindo mapeamento correto de `transport` (usando `wireName`) e sanitização de `readerId` (não atribuindo `internal_android_adapter` a leitores externos).
+
 ### 2.3 Capacidades do Leitor (`ReaderCapabilities`)
 
-Permite que a interface e os motores de protocolo consultem as funcionalidades suportadas pelo adaptador ativo sem suposições rígidas sobre o hardware:
+Diferencia capacidades estruturais seguras da plataforma (por exemplo, `READ`) de capacidades confirmadas do leitor/hardware (derivadas dinamicamente via `ReaderCapabilities.fromDetectedTechnologies(...)` a partir das tecnologias observadas na tag):
 
-* `READ`: Leitura padrão de identificadores e dados abertos.
+* `READ`: Leitura padrão universal de identificadores e dados abertos.
 * `WRITE`: Capacidade de gravação de blocos/NDEF.
 * `ISO_DEP`: Envio de APDUs ISO/IEC 7816-4.
 * `MIFARE_CLASSIC`: Suporte a comandos proprietários Crypto-1 e autenticação por chaves de 48 bits.
 * `NDEF`: Leitura e escrita de mensagens NDEF.
 * `ISO_15693` / `FELICA`: Protocolos de proximidade estendida e alta velocidade.
 * `RAW_TRANSCEIVE`: Envio de frames brutos.
-* `HCE`: Emulação de cartão baseada em host.
+* `HCE`: Emulação de cartão baseada em host (separada da capacidade de Reader Mode).
 
 ### 2.4 Identificador Único de Leitura (`scanId`)
 
@@ -74,6 +76,8 @@ Cada leitura recebe um identificador globalmente estável `scanId` (UUID v4), ga
 1. **Deduplicação** no histórico e exportações;
 2. **Sincronização Segura** com futuras instâncias do *NFC Inspector Sync*;
 3. **Imutabilidade** do registro técnico.
+
+Para registros legados da v1, um UUID determinístico derivado de `legacy_<id>_<timestamp>` é gerado de forma reprodutível.
 
 ---
 
@@ -146,7 +150,7 @@ O formato JSON gerado por `ReportFormatter.generateJsonExport()` segue o Schema 
 
 ## 5. Diretrizes de Segurança & Privacidade
 
-1. **Operação 100% Offline**: Nenhuma telemetria, rastreador, IMEI, Android ID ou conexão silenciosa com servidores.
+1. **Operação Offline-First**: O núcleo do aplicativo funciona sem necessidade de conexão com servidores.
 2. **Sanitização de Chaves Criptográficas**: Chaves secretas MIFARE (Key A / Key B) utilizadas durante a autenticação **NUNCA** são gravadas em texto puro nos relatórios, JSON ou logs exportáveis.
 3. **Privacidade de Armazenamento**: O banco de dados local reside estritamente no armazenamento privado do aplicativo (`context.getDatabasePath(...)`).
 
@@ -159,7 +163,7 @@ timeline
     title Roadmap do Ecossistema NFC Inspector
     Atual : Inspeção NFC Interno : MIFARE Classic & Memory Map : Relatório Visual Compose : JSON Schema v1
     Fase 1 : Abstração NfcTransport : ReaderSource & Capabilities : Room Migration v2
-    Fase 2 (Planejado) : NFC Inspector Sync (API REST / Pareamento QR) : Sincronização Descentralizada
+    Fase 2 (Planejado) : NFC Inspector Sync (API REST / Pareamento QR) : Sincronização Opcional com Servidor
     Fase 3 (Planejado) : NFC Inspector Lab (HCE / APDU Monitor) : Suporte a Leitores USB e BLE
 ```
 
@@ -168,10 +172,9 @@ timeline
 * Motor de diagnósticos e recomendações de segurança.
 
 ### 6.2 NFC Inspector Sync (Planejado)
-* API REST leve e pareamento ponta-a-ponta via QR Code.
-* Sincronização de tags e relatórios entre dispositivos móveis e desktops de auditoria.
+* Sincronização segura opcional com servidor NFC Inspector (API REST / Pareamento via QR Code).
 * Funcionamento offline-first com reconciliação por `scanId`.
 
 ### 6.3 NFC Inspector Lab (Planejado)
-* Emulação de cartões via Host Card Emulation (HCE) para perfis ISO-DEP / NDEF.
-* **Nota Técnica**: Cartões MIFARE Classic operam com modulação proprietária e framing incompatível com a pilha HCE padrão do Android (que atua apenas em ISO 14443-4 / ISO-DEP). O Lab indicará claramente as limitações de emulação suportadas pela plataforma.
+* Emulação de cartões de teste via Host Card Emulation (HCE) para perfis ISO-DEP / NDEF.
+* **Nota Técnica**: MIFARE Classic utiliza comunicação RF baseada em ISO/IEC 14443 Type A, mas possui comandos/autenticação específicos e utiliza Crypto-1. O HCE padrão do Android opera principalmente sobre ISO-DEP / ISO 14443-4 com troca de APDUs ISO 7816-4, portanto não permite reproduzir diretamente o comportamento completo de uma tag MIFARE Classic física.

@@ -2,6 +2,9 @@ package com.nfcinspector.app.domain.model
 
 /**
  * Categorization of NFC reader hardware and transport origins.
+ *
+ * [wireName] is an immutable, standardized identifier used in JSON export,
+ * API contracts, and persistent storage.
  */
 enum class ReaderSourceType(val displayName: String, val wireName: String) {
     ANDROID_NFC("NFC Interno Android", "android_nfc"),
@@ -33,9 +36,9 @@ enum class ReaderSourceType(val displayName: String, val wireName: String) {
  */
 data class ReaderSource(
     val sourceType: ReaderSourceType = ReaderSourceType.ANDROID_NFC,
-    val readerName: String = "NFC Interno Android",
-    val readerId: String? = "internal_android_adapter",
-    val transport: String = "android_nfc"
+    val readerName: String = sourceType.displayName,
+    val readerId: String? = if (sourceType == ReaderSourceType.ANDROID_NFC) "internal_android_adapter" else null,
+    val transport: String = sourceType.wireName
 ) {
     val displayName: String
         get() = if (readerName.isNotBlank() && readerName != sourceType.displayName) {
@@ -55,8 +58,40 @@ data class ReaderSource(
         val IMPORTED_FILE = ReaderSource(
             sourceType = ReaderSourceType.IMPORTED,
             readerName = "Importação de Arquivo",
-            readerId = "file_import",
-            transport = "file"
+            readerId = null,
+            transport = "imported"
         )
+
+        /**
+         * Central helper for reconstructing a [ReaderSource] from persistent storage or external payloads.
+         *
+         * Ensures that:
+         * 1. Transport matches the source type's canonical [ReaderSourceType.wireName] when not explicitly overridden.
+         * 2. The default [readerId] "internal_android_adapter" is NEVER erroneously assigned to non-Android readers.
+         */
+        fun fromPersisted(
+            sourceTypeStr: String?,
+            readerName: String? = null,
+            readerId: String? = null,
+            transport: String? = null
+        ): ReaderSource {
+            val type = ReaderSourceType.fromDbString(sourceTypeStr)
+            val name = readerName?.takeIf { it.isNotBlank() } ?: type.displayName
+
+            val cleanedId = when {
+                !readerId.isNullOrBlank() && readerId != "internal_android_adapter" -> readerId
+                type == ReaderSourceType.ANDROID_NFC -> "internal_android_adapter"
+                else -> null
+            }
+
+            val resolvedTransport = transport?.takeIf { it.isNotBlank() } ?: type.wireName
+
+            return ReaderSource(
+                sourceType = type,
+                readerName = name,
+                readerId = cleanedId,
+                transport = resolvedTransport
+            )
+        }
     }
 }

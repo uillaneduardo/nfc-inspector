@@ -5,7 +5,6 @@ import com.nfcinspector.app.data.local.TagEntity
 import com.nfcinspector.app.data.local.TechSerializer
 import com.nfcinspector.app.data.model.TagRecord
 import com.nfcinspector.app.domain.model.ReaderSource
-import com.nfcinspector.app.domain.model.ReaderSourceType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -28,7 +27,7 @@ class HistoryRepository(private val tagDao: TagDao) {
             timestamp = record.timestamp,
             readerSourceType = record.readerSource.sourceType.name,
             readerName = record.readerSource.readerName,
-            readerId = record.readerSource.readerId ?: "internal_android_adapter",
+            readerId = record.readerSource.readerId ?: "",
             uidColonHex = record.uidColonHex,
             uidContinuousHex = record.uidContinuousHex,
             uidDecimal = record.uidDecimal,
@@ -65,11 +64,10 @@ class HistoryRepository(private val tagDao: TagDao) {
             UUID.nameUUIDFromBytes("legacy_${entity.id}_${entity.timestamp}".toByteArray()).toString()
         }
 
-        val readerSource = ReaderSource(
-            sourceType = ReaderSourceType.fromDbString(entity.readerSourceType),
-            readerName = entity.readerName.ifBlank { "NFC Interno Android" },
-            readerId = entity.readerId.ifBlank { "internal_android_adapter" },
-            transport = if (entity.readerSourceType == "USB") "usb" else "android_nfc"
+        val readerSource = ReaderSource.fromPersisted(
+            sourceTypeStr = entity.readerSourceType,
+            readerName = entity.readerName,
+            readerId = entity.readerId
         )
 
         return TagRecord(
@@ -95,5 +93,3 @@ class HistoryRepository(private val tagDao: TagDao) {
         )
     }
 }
-
-

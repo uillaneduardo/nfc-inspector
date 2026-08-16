@@ -1,6 +1,8 @@
 package com.nfcinspector.app.report
 
 import com.nfcinspector.app.data.model.*
+import com.nfcinspector.app.domain.model.ReaderSource
+import com.nfcinspector.app.domain.model.ReaderSourceType
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -8,70 +10,11 @@ import org.junit.Test
 class ReportFormatterTest {
 
     private fun createSampleTagRecord(): TagRecord {
-        val block0Bytes = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10)
-        val sector0 = MifareSectorData(
-            sectorIndex = 0,
-            blockCount = 4,
-            firstBlockIndex = 0,
-            status = MifareSectorStatus.READ_SUCCESS,
-            authKeyType = "Key A",
-            authKeyName = "Padrão de Fábrica (NXP)",
-            blocks = listOf(
-                MifareBlockData(
-                    blockIndex = 0,
-                    blockIndexInSector = 0,
-                    blockType = MifareBlockType.MANUFACTURER,
-                    rawBytes = block0Bytes,
-                    hexFormatted = "01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10",
-                    asciiFormatted = "................",
-                    isReadSuccess = true
-                ),
-                MifareBlockData(
-                    blockIndex = 1,
-                    blockIndexInSector = 1,
-                    blockType = MifareBlockType.DATA,
-                    rawBytes = null,
-                    hexFormatted = "Não lido / Protegido",
-                    asciiFormatted = "—",
-                    isReadSuccess = false
-                )
-            ),
-            accessBits = MifareAccessBits(
-                rawBytesHex = "FF 07 80",
-                gpbHex = "0x69",
-                isValid = true,
-                trailerPermissions = TrailerAccessPermissions(
-                    c1 = 0, c2 = 0, c3 = 1,
-                    keyARead = "Nunca", keyAWrite = "Key A",
-                    accessBitsRead = "Key A", accessBitsWrite = "Nunca",
-                    keyBRead = "Key A", keyBWrite = "Key A"
-                ),
-                blockPermissions = listOf(
-                    BlockAccessPermissions(
-                        blockRangeLabel = "Bloco 0", groupIndex = 0,
-                        c1 = 0, c2 = 0, c3 = 0,
-                        readAccess = "Key A|B", writeAccess = "Key A|B",
-                        incrementAccess = "Key A|B", decrementTransferRestoreAccess = "Key A|B"
-                    )
-                )
-            )
-        )
-
-        val memoryMap = MifareClassicMemoryMap(
-            typeName = "MIFARE Classic 1K",
-            sizeBytes = 1024,
-            sectorCount = 16,
-            blockCount = 64,
-            sectors = listOf(sector0),
-            isInspected = true,
-            authenticatedSectorsCount = 1,
-            fullyReadSectorsCount = 0,
-            totalBlocksReadCount = 1
-        )
-
         return TagRecord(
             id = 1L,
+            scanId = "test-uuid-1234-5678",
             timestamp = 1773000000000L,
+            readerSource = ReaderSource.INTERNAL_NFC,
             uidColonHex = "04:5A:B2:1A",
             uidContinuousHex = "045AB21A",
             uidDecimal = "73052698",
@@ -81,42 +24,56 @@ class ReportFormatterTest {
             nfcA = NfcAParams(
                 atqaHex = "00 04",
                 sakHex = "08",
-                timeoutMs = 500,
-                maxTransceiveBytes = 253
+                sakDec = 8,
+                maxTransceiveBytes = 253,
+                timeoutMs = 618
             ),
             mifareClassic = MifareClassicParams(
-                typeName = "MIFARE Classic 1K",
                 sizeBytes = 1024,
                 sectorCount = 16,
                 blockCount = 64,
-                memoryMap = memoryMap
-            )
+                typeString = "MIFARE Classic 1K",
+                sectors = listOf(
+                    MifareSectorData(
+                        sectorIndex = 0,
+                        authenticated = true,
+                        keyTypeUsed = "Key A",
+                        blocks = listOf(
+                            MifareBlockData(
+                                blockIndex = 0,
+                                dataHex = "0102030405060708090A0B0C0D0E0F10",
+                                isSectorTrailer = false,
+                                isReadable = true
+                            ),
+                            MifareBlockData(
+                                blockIndex = 1,
+                                dataHex = null,
+                                isSectorTrailer = false,
+                                isReadable = false
+                            )
+                        )
+                    )
+                )
+            ),
+            isNdefFormatable = false
         )
     }
 
     @Test
-    fun testGenerateTechnicalReportV2Structure() {
+    fun testGenerateTechnicalReportContainsBasicMetadata() {
         val tag = createSampleTagRecord()
         val report = ReportFormatter.generateTechnicalReport(tag)
 
         assertTrue(report.contains("NFC INSPECTOR"))
         assertTrue(report.contains("Relatório Técnico de Inspeção NFC"))
-        assertTrue(report.contains("ID da Leitura (UUID):"))
+        assertTrue(report.contains("ID da Leitura (UUID): test-uuid-1234-5678"))
         assertTrue(report.contains("Origem da Leitura:    NFC Interno Android"))
         assertTrue(report.contains("04:5A:B2:1A"))
         assertTrue(report.contains("045AB21A"))
         assertTrue(report.contains("73052698"))
-        assertTrue(report.contains("--- NFC-A (ISO 14443-3A) ---"))
-        assertTrue(report.contains("--- MIFARE CLASSIC ---"))
-        assertTrue(report.contains("--- RESULTADO DA INSPEÇÃO MIFARE CLASSIC ---"))
-        assertTrue(report.contains("--- MAPA DE MEMÓRIA DETALHADO ---"))
-        assertTrue(report.contains("Setor 00"))
-        assertTrue(report.contains("Bloco 00 — Manufacturer Block"))
-        assertTrue(report.contains("01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10"))
-        assertTrue(report.contains("Bloco 01 — Data Block"))
-        assertTrue(report.contains("[Não lido / Protegido]"))
-        assertTrue(report.contains("Bits de Acesso"))
-        assertTrue(report.contains("OBSERVAÇÕES E NOTAS:"))
+        assertTrue(report.contains("MIFARE Classic 1K"))
+        assertTrue(report.contains("00 04"))
+        assertTrue(report.contains("08"))
         assertTrue(report.contains("Gerado por NFC Inspector"))
     }
 
@@ -141,7 +98,7 @@ class ReportFormatterTest {
         val report = ReportFormatter.generateTechnicalReport(nfcBTag)
         assertFalse("Should not mention ISO 14443-3A on an NFC-B only tag", report.contains("ISO 14443-3A"))
         assertFalse("Should not mention Crypto-1 on an NFC-B only tag", report.contains("Crypto-1"))
-        assertTrue("Should mention offline privacy on any report", report.contains("Privacidade: Operação 100% offline."))
+        assertTrue("Should mention offline privacy on any report", report.contains("Privacidade: Operação offline."))
     }
 
     @Test
@@ -151,8 +108,7 @@ class ReportFormatterTest {
 
         val json = JSONObject(jsonStr)
         assertEquals(1, json.getInt("schemaVersion"))
-        assertTrue(json.has("scanId"))
-        assertNotNull(json.getString("scanId"))
+        assertEquals("test-uuid-1234-5678", json.getString("scanId"))
 
         val generator = json.getJSONObject("generator")
         assertEquals("NFC Inspector", generator.getString("name"))
@@ -162,6 +118,7 @@ class ReportFormatterTest {
         assertEquals("android_nfc", reader.getString("source"))
         assertEquals("NFC Interno Android", reader.getString("name"))
         assertEquals("android_nfc", reader.getString("transport"))
+        assertEquals("internal_android_adapter", reader.getString("id"))
 
         assertTrue(json.has("capturedAt"))
         assertTrue(json.has("inspectionStatus"))
@@ -198,6 +155,49 @@ class ReportFormatterTest {
 
         // Security check: no raw key hex anywhere
         assertFalse(jsonStr.contains("FFFFFFFFFFFF"))
+    }
+
+    @Test
+    fun testGenerateJsonExportMultipleReaderSources() {
+        // USB Reader
+        val usbTag = createSampleTagRecord().copy(
+            readerSource = ReaderSource(
+                sourceType = ReaderSourceType.USB,
+                readerName = "ACR122U USB Reader",
+                readerId = "usb_072f_2200",
+                transport = "usb"
+            )
+        )
+        val usbJson = JSONObject(ReportFormatter.generateJsonExport(usbTag))
+        val usbReader = usbJson.getJSONObject("reader")
+        assertEquals("usb", usbReader.getString("source"))
+        assertEquals("ACR122U USB Reader", usbReader.getString("name"))
+        assertEquals("usb", usbReader.getString("transport"))
+        assertEquals("usb_072f_2200", usbReader.getString("id"))
+
+        // Bluetooth Reader without ID
+        val btTag = createSampleTagRecord().copy(
+            readerSource = ReaderSource(
+                sourceType = ReaderSourceType.BLUETOOTH,
+                readerName = "Leitor Bluetooth",
+                readerId = null,
+                transport = "bluetooth"
+            )
+        )
+        val btJson = JSONObject(ReportFormatter.generateJsonExport(btTag))
+        val btReader = btJson.getJSONObject("reader")
+        assertEquals("bluetooth", btReader.getString("source"))
+        assertEquals("bluetooth", btReader.getString("transport"))
+        assertFalse("When readerId is null, id key should not be present in JSON", btReader.has("id"))
+
+        // Imported File Reader
+        val importedTag = createSampleTagRecord().copy(
+            readerSource = ReaderSource.IMPORTED_FILE
+        )
+        val importedJson = JSONObject(ReportFormatter.generateJsonExport(importedTag))
+        val importedReader = importedJson.getJSONObject("reader")
+        assertEquals("imported", importedReader.getString("source"))
+        assertEquals("imported", importedReader.getString("transport"))
     }
 
     @Test

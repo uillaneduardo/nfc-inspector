@@ -2,7 +2,7 @@
 
 **NFC Inspector** é um aplicativo Android nativo completo desenvolvido em **Kotlin** com **Jetpack Compose** e **Material 3**, voltado para diagnóstico técnico aprofundado, identificação e inspeção de tags e cartões NFC pertencentes ao usuário ou sob autorização.
 
-100% gratuito, offline-first, sem anúncios, sem rastreadores, sem telemetria e sem coleta de dados.
+Construído sob o paradigma **offline-first**, sem anúncios, sem rastreadores, sem telemetria e sem coleta de dados do dispositivo. O funcionamento principal do aplicativo opera inteiramente local no aparelho e não depende de nenhum servidor.
 
 ---
 
@@ -11,8 +11,8 @@
 O projeto é estruturado seguindo rigorosamente **Clean Architecture**, **MVVM** e **Unidirectional Data Flow**:
 
 - **`com.nfcinspector.app.domain`**:
-  - `model.ReaderSource.kt`: Identificação e metadados da origem de leitura (`ANDROID_NFC`, `USB`, `BLUETOOTH`, `REMOTE`, `IMPORTED`).
-  - `model.ReaderCapabilities.kt`: Consulta declarativa de capacidades do leitor ativo (`READ`, `WRITE`, `ISO_DEP`, `MIFARE_CLASSIC`, `NDEF`, `APDU`, `HCE`).
+  - `model.ReaderSource.kt`: Identificação, reconstrução centralizada e metadados da origem de leitura (`ANDROID_NFC`, `USB`, `BLUETOOTH`, `REMOTE`, `IMPORTED`, `UNKNOWN`).
+  - `model.ReaderCapabilities.kt`: Consulta declarativa de capacidades do leitor ativo (`READ`, `WRITE`, `ISO_DEP`, `MIFARE_CLASSIC`, `NDEF`, `ISO_15693`, `FELICA`, `RAW_TRANSCEIVE`, `APDU`, `HCE`), com base segura para Android Reader Mode e inferência dinâmica baseada em evidência de tecnologias detectadas.
   - `transport.NfcTransport.kt`: Contrato de abstração da camada de transporte desacoplada da API do Android.
   - `operation.NfcOperationResult.kt`: Tratamento estruturado de resultados e erros de domínio (`TagLost`, `AuthenticationFailed`, `UnsupportedTechnology`, etc.).
 - **`com.nfcinspector.app.data.model`**:
@@ -20,7 +20,7 @@ O projeto é estruturado seguindo rigorosamente **Clean Architecture**, **MVVM**
   - `TechDataModels.kt`: Modelos para cada tecnologia de RF (`NfcAParams`, `NfcBParams`, `IsoDepParams`, `MifareClassicParams`, `MifareUltralightParams`, `NfcFParams`, `NfcVParams`, `NdefParams`, `NdefRecordItem`).
   - `NfcState.kt`: Modelagem dos estados reativos do hardware.
 - **`com.nfcinspector.app.data.local` & `repository`**:
-  - `AppDatabase.kt`, `TagDao.kt`, `TagEntity.kt`: Persistência local utilizando **Room Database (v2)** com migração segura `MIGRATION_1_2` (preserva dados e adiciona `scanUuid` e `readerSource`).
+  - `AppDatabase.kt`, `TagDao.kt`, `TagEntity.kt`: Persistência local utilizando **Room Database (v2)** com migração segura `MIGRATION_1_2` (preserva dados legados com scanId determinístico `legacy_<id>_<timestamp>` e adiciona `scanUuid` e metadados de leitor).
   - `TechSerializer.kt`: Serialização e desserialização isolada dos parâmetros de RF e mapas de memória para persistência em SQLite.
   - `HistoryRepository.kt`: Repositório para o fluxo de leituras salvas offline, busca por ID, exclusão e deduplicação estável.
 - **`com.nfcinspector.app.nfc`**:
@@ -47,8 +47,8 @@ Documentação detalhada da arquitetura: consulte [`docs/architecture.md`](docs/
 O NFC Inspector separa rigorosamente **Camada de Transporte** de **Camada de Protocolo**:
 
 1. **`NfcTransport`**: Interface responsável pela entrega bruta de comandos e recepção de respostas.
-2. **`ReaderSource`**: Identifica a origem do leitor utilizado em cada diagnóstico (`NFC Interno Android`, `Leitor USB Externo`, `Leitor Bluetooth`, `Remoto`).
-3. **`ReaderCapabilities`**: Informa dinamicamente as funcionalidades suportadas pelo hardware ativo sem suposições estáticas.
+2. **`ReaderSource`**: Identifica a origem do leitor utilizado em cada diagnóstico (`NFC Interno Android`, `Leitor USB Externo`, `Leitor Bluetooth`, `Remoto`, `Importação`).
+3. **`ReaderCapabilities`**: Informa dinamicamente as funcionalidades suportadas pelo hardware ativo sem suposições estáticas infundadas.
 4. **`scanId` (UUID)**: Todo diagnóstico possui um identificador global único que viabiliza exportação padronizada e futura sincronização sem colisão.
 
 ---
@@ -72,11 +72,11 @@ O NFC Inspector separa rigorosamente **Camada de Transporte** de **Camada de Pro
 
 ### NFC Inspector Lab (Planejado)
 * Emulação de cartões de teste via Host Card Emulation (HCE) para perfis ISO-DEP / NDEF.
-* **Nota Técnica de Engenharia**: Cartões MIFARE Classic operam com modulação de camada física proprietária e enquadramento incompatível com a pilha HCE padrão do Android (que atua exclusivamente em ISO 14443-4 / ISO-DEP). O Lab detalhará de forma clara as limitações de emulação da plataforma.
+* **Nota Técnica de Engenharia**: MIFARE Classic utiliza comunicação RF baseada em ISO/IEC 14443 Type A, mas possui comandos/autenticação específicos e utiliza Crypto-1. O HCE padrão do Android opera principalmente sobre ISO-DEP / ISO 14443-4 com troca de APDUs ISO 7816-4, portanto não permite reproduzir diretamente o comportamento completo de uma tag MIFARE Classic física.
 
 ### NFC Inspector Sync (Planejado)
-* API REST leve e pareamento ponta-a-ponta via QR Code.
-* Sincronização segura descentralizada e 100% offline entre dispositivos móveis e desktops de auditoria.
+* Sincronização segura opcional com servidor NFC Inspector (API REST / pareamento via QR Code).
+* Arquitetura offline-first: o aplicativo continuará funcionando perfeitamente sem servidor quando o módulo Sync não for configurado ou estiver desabilitado.
 
 ---
 
@@ -97,7 +97,7 @@ O NFC Inspector separa rigorosamente **Camada de Transporte** de **Camada de Pro
   - `android.permission.NFC`
   - `android.permission.VIBRATE`
   - `android.hardware.nfc` (`android:required="false"` para permitir instalação e aviso informativo em qualquer aparelho).
-  - **Zero permissões de rede (`android.permission.INTERNET` NÃO solicitada)**.
+  - **Zero permissões de rede (`android.permission.INTERNET` NÃO solicitada no core)**.
 
 ---
 
@@ -127,6 +127,6 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ## 7. Privacidade e Segurança
 
-1. **Operação 100% Offline**: O aplicativo não possui permissão de internet e não se conecta a nenhum servidor.
+1. **Operação Offline-First**: O aplicativo core funciona 100% desconectado, sem dependência de nuvem.
 2. **Sem Coleta de Dados**: Nenhum identificador intrusivo do dispositivo (IMEI, Android ID, número de série) é lido ou armazenado.
 3. **Proteção de Chaves**: Chaves criptográficas não são exportadas ou gravadas em texto puro nos relatórios compartilháveis.
