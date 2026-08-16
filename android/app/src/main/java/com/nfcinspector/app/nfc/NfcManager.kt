@@ -16,7 +16,7 @@ import com.nfcinspector.app.data.model.TagRecord
 
 class NfcManager(
     private val context: Context,
-    private val onTagScanned: (TagRecord) -> Unit,
+    private val onTagScanned: (TagRecord, Tag?) -> Unit,
     private val onError: (String) -> Unit
 ) : NfcAdapter.ReaderCallback {
 
@@ -78,7 +78,7 @@ class NfcManager(
         triggerHapticFeedback()
         try {
             val record = NfcTagParser.parseTag(tag, customKeyA, customKeyB)
-            onTagScanned(record)
+            onTagScanned(record, tag)
         } catch (e: Exception) {
             val msg = if (e is java.io.IOException || e.javaClass.simpleName.contains("TagLost")) {
                 "A tag foi afastada antes da conclusão da leitura. Mantenha o cartão estável e tente novamente."

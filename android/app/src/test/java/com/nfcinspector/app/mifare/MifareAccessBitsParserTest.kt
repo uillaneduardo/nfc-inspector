@@ -126,5 +126,16 @@ class MifareAccessBitsParserTest {
         val invalidKey = MifareClassicInspector.parseHexKey("FFAABB")
         assertEquals(null, invalidKey)
     }
+
+    @Test
+    fun testResolveVariantTypeName() {
+        assertEquals("MIFARE Classic Mini", MifareClassicInspector.resolveVariantTypeName(0, 320, 5))
+        assertEquals("MIFARE Classic 1K", MifareClassicInspector.resolveVariantTypeName(0, 1024, 16))
+        assertEquals("MIFARE Classic 2K", MifareClassicInspector.resolveVariantTypeName(0, 2048, 32))
+        assertEquals("MIFARE Classic 4K", MifareClassicInspector.resolveVariantTypeName(0, 4096, 40))
+        assertEquals("MIFARE Classic", MifareClassicInspector.resolveVariantTypeName(0, 512, 8))
+        assertEquals("MIFARE Plus (SL1 emulado)", MifareClassicInspector.resolveVariantTypeName(1, 2048, 32))
+        assertEquals("MIFARE Pro", MifareClassicInspector.resolveVariantTypeName(2, 4096, 40))
+    }
 }
 

@@ -196,12 +196,11 @@ object NfcTagParser {
     ): MifareClassicParams? {
         val mfc = MifareClassic.get(tag) ?: return null
         return try {
-            val typeStr = when (mfc.type) {
-                MifareClassic.TYPE_CLASSIC -> "MIFARE Classic Standard"
-                MifareClassic.TYPE_PLUS -> "MIFARE Plus (SL1 emulado)"
-                MifareClassic.TYPE_PRO -> "MIFARE Pro"
-                else -> "MIFARE Desconhecido"
-            }
+            val typeStr = MifareClassicInspector.resolveVariantTypeName(
+                type = mfc.type,
+                sizeBytes = mfc.size,
+                sectorCount = mfc.sectorCount
+            )
 
             // Build baseline structural memory map without blocking RF authentication during initial discovery
             val memoryMap = MifareClassicInspector.buildInitialStructure(mfc)

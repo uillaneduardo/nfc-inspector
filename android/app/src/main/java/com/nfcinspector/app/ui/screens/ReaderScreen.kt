@@ -42,6 +42,8 @@ fun ReaderScreen(
     val context = LocalContext.current
     val nfcStatus by viewModel.nfcStatus.collectAsState()
     val currentTag by viewModel.currentTag.collectAsState()
+    val isMifareInspecting by viewModel.isMifareInspecting.collectAsState()
+    val mifareInspectionMessage by viewModel.mifareInspectionStatusMessage.collectAsState()
     val isSaved by viewModel.isCurrentTagSaved.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
     val scrollState = rememberScrollState()
@@ -119,7 +121,12 @@ fun ReaderScreen(
             }
 
             tag.mifareClassic?.let { mfc ->
-                MifareClassicDetailCard(mfc)
+                MifareClassicDetailCard(
+                    mfc = mfc,
+                    isInspecting = isMifareInspecting,
+                    inspectionMessage = mifareInspectionMessage,
+                    onInspect = { viewModel.inspectMifareSectors() }
+                )
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
@@ -624,7 +631,12 @@ fun NdefDetailCard(ndef: com.nfcinspector.app.data.model.NdefParams) {
 }
 
 @Composable
-fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicParams) {
+fun MifareClassicDetailCard(
+    mfc: com.nfcinspector.app.data.model.MifareClassicParams,
+    isInspecting: Boolean,
+    inspectionMessage: String?,
+    onInspect: () -> Unit
+) {
     val context = LocalContext.current
     var isExpandedMap by remember { mutableStateOf(true) }
     var selectedSectorFilter by remember { mutableStateOf(0) } // 0: Todos, 1: Autenticados, 2: Falhas
@@ -649,7 +661,7 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "MIFARE Classic",
+                        text = mfc.typeName,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = TechBlue)
                     )
                 }
@@ -668,7 +680,7 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
             }
 
             Spacer(modifier = Modifier.height(10.dp))
-            TechRow("Tipo Detectado", mfc.typeName)
+            TechRow("Variante / Tipo", mfc.typeName)
             TechRow("Capacidade Total", com.nfcinspector.app.data.model.MifareClassicMemoryMap.formatMifareCapacity(mfc.sizeBytes))
             TechRow("Quantidade de Setores", "${mfc.sectorCount}")
             TechRow("Total de Blocos", "${mfc.blockCount}")
@@ -689,11 +701,120 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
                 )
             }
 
+            // Explicit Inspection Action Banner & Controls
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val memoryMap = mfc.memoryMap
+            val hasBeenInspected = memoryMap?.isInspected == true
+
+            if (isInspecting) {
+                // Processing State
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = TechBlue.copy(alpha = 0.10f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.5.dp,
+                            color = TechBlue
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Inspecionando setores...",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = TechBlue)
+                            )
+                            Text(
+                                text = "Mantenha a tag próxima ao aparelho durante a leitura.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            } else {
+                if (!hasBeenInspected) {
+                    // Initial State: Prompt user to inspect sectors
+                    Button(
+                        onClick = onInspect,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TechBlue)
+                    ) {
+                        Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Inspecionar setores",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Mantenha a tag próxima ao aparelho para testar autenticação e ler os blocos com chaves padrão conhecidas.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                } else {
+                    // Already inspected: Show repeat/retry button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Inspeção Realizada",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = SignalGreen)
+                            )
+                            Text(
+                                text = "${memoryMap.authenticatedSectorsCount}/${memoryMap.sectorCount} setores autenticados",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = onInspect,
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Reinspecionar", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+
+            // Inspection Feedback / Error / Status Message
+            if (inspectionMessage != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = inspectionMessage,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            }
+
             // Memory map inspection section
-            mfc.memoryMap?.let { map ->
+            if (memoryMap != null) {
                 Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -706,7 +827,7 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
-                            text = "${map.authenticatedSectorsCount}/${map.sectorCount} setores autenticados • ${map.totalBlocksReadCount}/${map.blockCount} blocos lidos",
+                            text = "${memoryMap.authenticatedSectorsCount}/${memoryMap.sectorCount} setores autenticados • ${memoryMap.totalBlocksReadCount}/${memoryMap.blockCount} blocos lidos",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -731,17 +852,17 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
                         FilterChip(
                             selected = selectedSectorFilter == 0,
                             onClick = { selectedSectorFilter = 0 },
-                            label = { Text("Todos (${map.sectors.size})", style = MaterialTheme.typography.labelSmall) }
+                            label = { Text("Todos (${memoryMap.sectors.size})", style = MaterialTheme.typography.labelSmall) }
                         )
                         FilterChip(
                             selected = selectedSectorFilter == 1,
                             onClick = { selectedSectorFilter = 1 },
-                            label = { Text("Autenticados (${map.authenticatedSectorsCount})", style = MaterialTheme.typography.labelSmall) }
+                            label = { Text("Autenticados (${memoryMap.authenticatedSectorsCount})", style = MaterialTheme.typography.labelSmall) }
                         )
                         FilterChip(
                             selected = selectedSectorFilter == 2,
                             onClick = { selectedSectorFilter = 2 },
-                            label = { Text("Falhas (${map.sectorCount - map.authenticatedSectorsCount})", style = MaterialTheme.typography.labelSmall) }
+                            label = { Text("Falhas (${memoryMap.sectorCount - memoryMap.authenticatedSectorsCount})", style = MaterialTheme.typography.labelSmall) }
                         )
                     }
 
@@ -765,9 +886,9 @@ fun MifareClassicDetailCard(mfc: com.nfcinspector.app.data.model.MifareClassicPa
                     Spacer(modifier = Modifier.height(10.dp))
 
                     val filteredSectors = when (selectedSectorFilter) {
-                        1 -> map.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ }
-                        2 -> map.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_FAILED || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.NOT_TESTED }
-                        else -> map.sectors
+                        1 -> memoryMap.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTHENTICATED_READ }
+                        2 -> memoryMap.sectors.filter { it.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_FAILED || it.status == com.nfcinspector.app.data.model.MifareSectorStatus.NOT_TESTED }
+                        else -> memoryMap.sectors
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -791,10 +912,11 @@ fun MifareSectorCard(
     sector: com.nfcinspector.app.data.model.MifareSectorData,
     onCopyBlock: (String, String) -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || sector.sectorIndex == 0) }
+    var isExpanded by remember { mutableStateOf(sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || sector.sectorIndex == 0) }
 
     val statusColor = when (sector.status) {
-        com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS -> SignalGreen
+        com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS,
+        com.nfcinspector.app.data.model.MifareSectorStatus.AUTHENTICATED_READ -> SignalGreen
         com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A -> TechBlue
         com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B -> TechBlue
         com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ -> WarningOrange
@@ -856,19 +978,18 @@ fun MifareSectorCard(
                         )
                         if (sector.authKeyName != null) {
                             Text(
-                                text = " • ${sector.authKeyName}",
+                                text = " • Chave: ${sector.authKeyName}",
                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    if (sector.authKeyUsedHex != null) {
-                        Text(
-                            text = "Chave Hex: ${sector.authKeyUsedHex}",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    val resultado = if (sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ || sector.status == com.nfcinspector.app.data.model.MifareSectorStatus.AUTHENTICATED_READ) "sucesso" else sector.status.label
+                    Text(
+                        text = "Resultado: $resultado",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = if (resultado == "sucesso") SignalGreen else WarningOrange
+                    )
                 }
             }
 

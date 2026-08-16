@@ -56,13 +56,31 @@ object MifareClassicInspector {
     )
 
     /**
+     * Resolves the descriptive variant name for MIFARE Classic tags based on native hardware size and sectors.
+     */
+    fun resolveVariantTypeName(type: Int, sizeBytes: Int, sectorCount: Int): String {
+        return when (type) {
+            MifareClassic.TYPE_CLASSIC -> when {
+                sizeBytes == 320 || sectorCount == 5 -> "MIFARE Classic Mini"
+                sizeBytes == 1024 || sectorCount == 16 -> "MIFARE Classic 1K"
+                sizeBytes == 2048 || sectorCount == 32 -> "MIFARE Classic 2K"
+                sizeBytes == 4096 || sectorCount == 40 -> "MIFARE Classic 4K"
+                else -> "MIFARE Classic"
+            }
+            MifareClassic.TYPE_PLUS -> "MIFARE Plus (SL1 emulado)"
+            MifareClassic.TYPE_PRO -> "MIFARE Pro"
+            else -> "MIFARE Classic"
+        }
+    }
+
+    /**
      * Builds the baseline structural memory map without performing RF communication.
      */
     fun buildInitialStructure(mfc: MifareClassic): MifareClassicMemoryMap {
-        val typeStr = getTypeName(mfc.type)
         val sectorCount = mfc.sectorCount
         val totalBlockCount = mfc.blockCount
         val sizeBytes = mfc.size
+        val typeStr = resolveVariantTypeName(mfc.type, sizeBytes, sectorCount)
 
         val sectorsList = mutableListOf<MifareSectorData>()
 
@@ -338,15 +356,6 @@ object MifareClassicInspector {
             fullyReadSectorsCount = fullyReadSectors,
             totalBlocksReadCount = totalBlocksRead
         )
-    }
-
-    private fun getTypeName(type: Int): String {
-        return when (type) {
-            MifareClassic.TYPE_CLASSIC -> "MIFARE Classic Standard"
-            MifareClassic.TYPE_PLUS -> "MIFARE Plus (SL1 emulado)"
-            MifareClassic.TYPE_PRO -> "MIFARE Pro"
-            else -> "MIFARE Desconhecido"
-        }
     }
 
     fun formatHexSpaced(bytes: ByteArray?): String {

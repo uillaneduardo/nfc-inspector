@@ -99,13 +99,12 @@ data class TagRecord(
                     sb.appendLine("Setor $secNumStr (${sector.blockCount} blocos)")
                     sb.appendLine("  Status:        ${sector.status.label}")
                     if (sector.authKeyType != null) {
-                        sb.appendLine("  Tipo de Chave: ${sector.authKeyType}")
+                        sb.appendLine("  Autenticação:  ${sector.authKeyType}")
                         if (sector.authKeyName != null) {
-                            sb.appendLine("  Nome da Chave: ${sector.authKeyName}")
+                            sb.appendLine("  Chave:         ${sector.authKeyName}")
                         }
-                        if (sector.authKeyUsedHex != null) {
-                            sb.appendLine("  Chave Hex:     ${sector.authKeyUsedHex}")
-                        }
+                        val resultado = if (sector.status == MifareSectorStatus.READ_SUCCESS || sector.status == MifareSectorStatus.AUTH_KEY_A || sector.status == MifareSectorStatus.AUTH_KEY_B || sector.status == MifareSectorStatus.PARTIAL_READ || sector.status == MifareSectorStatus.AUTHENTICATED_READ) "sucesso" else sector.status.label
+                        sb.appendLine("  Resultado:     $resultado")
                     }
 
                     sector.blocks.forEach { block ->

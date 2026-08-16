@@ -44,9 +44,9 @@ class MainActivity : ComponentActivity() {
 
         nfcManager = NfcManager(
             context = this,
-            onTagScanned = { tagRecord ->
+            onTagScanned = { tagRecord, rawTag ->
                 runOnUiThread {
-                    viewModel.onTagScanned(tagRecord)
+                    viewModel.onTagScanned(tagRecord, rawTag)
                 }
             },
             onError = { errorMsg ->
