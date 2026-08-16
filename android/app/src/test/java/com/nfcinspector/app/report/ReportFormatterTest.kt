@@ -114,7 +114,32 @@ class ReportFormatterTest {
         assertTrue(report.contains("Bloco 01 — Data Block"))
         assertTrue(report.contains("[Não lido / Protegido]"))
         assertTrue(report.contains("Bits de Acesso"))
-        assertTrue(report.contains("OBSERVAÇÕES E NOTAS DE SEGURANÇA"))
+        assertTrue(report.contains("OBSERVAÇÕES E NOTAS:"))
+        assertTrue(report.contains("Gerado por NFC Inspector"))
+    }
+
+    @Test
+    fun testGenerateTechnicalReportContextualNotes() {
+        // Tag with only NFC-B (no NFC-A and no MifareClassic)
+        val nfcBTag = TagRecord(
+            id = 2L,
+            timestamp = 1773000000000L,
+            uidColonHex = "08:11:22:33:44:55",
+            uidContinuousHex = "081122334455",
+            uidDecimal = "123456789",
+            uidLengthBytes = 6,
+            mainTechnology = "NFC-B (ISO 14443-3B)",
+            technologies = listOf("android.nfc.tech.NfcB"),
+            nfcB = NfcBParams(
+                appDataHex = "01020304",
+                protocolInfoHex = "050607",
+                maxTransceiveBytes = 253
+            )
+        )
+        val report = ReportFormatter.generateTechnicalReport(nfcBTag)
+        assertFalse("Should not mention ISO 14443-3A on an NFC-B only tag", report.contains("ISO 14443-3A"))
+        assertFalse("Should not mention Crypto-1 on an NFC-B only tag", report.contains("Crypto-1"))
+        assertTrue("Should mention offline privacy on any report", report.contains("Privacidade: Operação 100% offline."))
     }
 
     @Test
@@ -127,7 +152,7 @@ class ReportFormatterTest {
 
         val generator = json.getJSONObject("generator")
         assertEquals("NFC Inspector", generator.getString("name"))
-        assertEquals("1.0.0", generator.getString("version"))
+        assertEquals("Android", generator.getString("platform"))
 
         assertTrue(json.has("capturedAt"))
         assertTrue(json.has("inspectionStatus"))

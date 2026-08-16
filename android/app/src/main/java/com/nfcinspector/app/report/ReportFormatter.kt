@@ -268,14 +268,25 @@ object ReportFormatter {
             }
         }
 
-        // 5. OBSERVAÇÕES E NOTAS DE SEGURANÇA
+        // 5. OBSERVAÇÕES E NOTAS DE SEGURANÇA CONTEXTUAIS
+        val notes = mutableListOf<String>()
+        var noteCounter = 1
+
+        if (tag.nfcA != null) {
+            notes.add("${noteCounter++}. O UID é um identificador de camada de enlace (ISO 14443-3A). Em cartões regraváveis (Magic Cards), o UID pode ser clonado.")
+        }
+        if (tag.mifareClassic != null) {
+            notes.add("${noteCounter++}. A autenticação MIFARE Classic baseia-se no algoritmo proprietário Crypto-1.")
+        }
+        notes.add("${noteCounter}. Privacidade: Operação 100% offline. Nenhum dado é transmitido a servidores.")
+
         sb.appendLine("==================================================")
-        sb.appendLine("OBSERVAÇÕES E NOTAS DE SEGURANÇA:")
-        sb.appendLine("1. O UID é um identificador de camada física (ISO 14443-3A). Em cartões regraváveis (Magic Cards), o UID pode ser clonado.")
-        sb.appendLine("2. A autenticação MIFARE Classic baseia-se no algoritmo proprietário Crypto-1.")
-        sb.appendLine("3. Privacidade: Operação 100% offline. Nenhum dado é transmitido a servidores.")
+        sb.appendLine("OBSERVAÇÕES E NOTAS:")
+        notes.forEach { note ->
+            sb.appendLine(note)
+        }
         sb.appendLine("==================================================")
-        sb.appendLine("Gerado por NFC Inspector v1.0.0")
+        sb.appendLine("Gerado por NFC Inspector")
 
         return sb.toString()
     }
@@ -295,7 +306,6 @@ object ReportFormatter {
         root.put("schemaVersion", 1)
         root.put("generator", JSONObject().apply {
             put("name", "NFC Inspector")
-            put("version", "1.0.0")
             put("platform", "Android")
         })
         root.put("capturedAt", formatIso8601(tag.timestamp))
