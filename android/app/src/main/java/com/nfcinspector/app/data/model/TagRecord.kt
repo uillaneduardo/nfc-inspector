@@ -64,7 +64,6 @@ data class TagRecord(
             sb.appendLine("--- NFC-B (ISO 14443-3B) ---")
             sb.appendLine("Application Data:    ${it.appDataHex}")
             sb.appendLine("Protocol Info:       ${it.protocolInfoHex}")
-            sb.appendLine("Timeout:             ${it.timeoutMs} ms")
             sb.appendLine("Max Transceive:      ${it.maxTransceiveBytes} bytes")
             sb.appendLine()
         }

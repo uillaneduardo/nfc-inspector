@@ -151,12 +151,10 @@ object NfcTagParser {
         return try {
             val appData = nfcB.applicationData ?: byteArrayOf()
             val protoInfo = nfcB.protocolInfo ?: byteArrayOf()
-            val timeout = nfcB.timeout
             val maxTransceive = nfcB.maxTransceiveLength
             NfcBParams(
                 appDataHex = if (appData.isNotEmpty()) "0x" + toContinuousHex(appData) else "Não especificado",
                 protocolInfoHex = if (protoInfo.isNotEmpty()) "0x" + toContinuousHex(protoInfo) else "Não especificado",
-                timeoutMs = timeout,
                 maxTransceiveBytes = maxTransceive
             )
         } catch (e: Exception) {
@@ -241,7 +239,7 @@ object NfcTagParser {
     private fun parseNfcV(tag: Tag): NfcVParams? {
         val nfcV = NfcV.get(tag) ?: return null
         return try {
-            val dsfid = String.format(Locale.US, "0x%02X", nfcV.dsfid)
+            val dsfid = String.format(Locale.US, "0x%02X", nfcV.dsfId)
             val flags = String.format(Locale.US, "0x%02X", nfcV.responseFlags)
             NfcVParams(
                 dsfidHex = dsfid,

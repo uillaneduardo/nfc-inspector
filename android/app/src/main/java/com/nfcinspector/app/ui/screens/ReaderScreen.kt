@@ -676,7 +676,6 @@ fun NfcBDetailCard(nfcB: com.nfcinspector.app.data.model.NfcBParams) {
             Spacer(modifier = Modifier.height(10.dp))
             TechRow("Application Data", nfcB.appDataHex)
             TechRow("Protocol Info", nfcB.protocolInfoHex)
-            TechRow("Timeout", "${nfcB.timeoutMs} ms")
             TechRow("Max Transceive", "${nfcB.maxTransceiveBytes} bytes")
         }
     }

@@ -10,7 +10,6 @@ data class NfcAParams(
 data class NfcBParams(
     val appDataHex: String,
     val protocolInfoHex: String,
-    val timeoutMs: Int,
     val maxTransceiveBytes: Int
 )
 
