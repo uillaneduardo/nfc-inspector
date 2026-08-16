@@ -23,6 +23,8 @@ android/.gradle/
 
 # Gradle files
 .gradletasknamecache
+!gradle-wrapper.jar
+!android/gradle/wrapper/gradle-wrapper.jar
 
 # Local configuration file (sdk path, etc)
 local.properties
