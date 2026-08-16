@@ -33,6 +33,7 @@ import com.nfcinspector.app.data.model.TagRecord
 import com.nfcinspector.app.nfc.NfcManager
 import com.nfcinspector.app.ui.theme.*
 import com.nfcinspector.app.ui.viewmodel.MainViewModel
+import java.util.Locale
 
 @Composable
 fun ReaderScreen(
@@ -918,7 +919,7 @@ fun MifareSectorCard(
         com.nfcinspector.app.data.model.MifareSectorStatus.READ_SUCCESS -> SignalGreen
         com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_A -> TechBlue
         com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_KEY_B -> TechBlue
-        com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ -> WarningOrange
+        com.nfcinspector.app.data.model.MifareSectorStatus.PARTIAL_READ -> WarningAmber
         com.nfcinspector.app.data.model.MifareSectorStatus.AUTH_FAILED -> MaterialTheme.colorScheme.onSurfaceVariant
         com.nfcinspector.app.data.model.MifareSectorStatus.NOT_TESTED -> MaterialTheme.colorScheme.outline
     }
@@ -987,7 +988,7 @@ fun MifareSectorCard(
                     Text(
                         text = "Resultado: $resultado",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = if (resultado == "sucesso") SignalGreen else WarningOrange
+                        color = if (resultado == "sucesso") SignalGreen else WarningAmber
                     )
                 }
             }
@@ -1022,7 +1023,7 @@ fun MifareBlockItem(
     onCopy: () -> Unit
 ) {
     val (typeBadgeColor, typeBadgeBg) = when (block.blockType) {
-        com.nfcinspector.app.data.model.MifareBlockType.MANUFACTURER -> WarningOrange to WarningOrange.copy(alpha = 0.15f)
+        com.nfcinspector.app.data.model.MifareBlockType.MANUFACTURER -> WarningAmber to WarningAmber.copy(alpha = 0.15f)
         com.nfcinspector.app.data.model.MifareBlockType.DATA -> TechBlue to TechBlue.copy(alpha = 0.15f)
         com.nfcinspector.app.data.model.MifareBlockType.SECTOR_TRAILER -> Color(0xFF8B5CF6) to Color(0xFF8B5CF6).copy(alpha = 0.15f)
     }
