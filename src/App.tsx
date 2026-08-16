@@ -159,6 +159,14 @@ export default function App() {
                   <span className="font-medium text-slate-200">Android 12 (API 31/32)</span>
                 </div>
                 <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex justify-between items-center">
+                  <span className="text-slate-400">Gradle Runtime / JVM:</span>
+                  <span className="font-mono text-cyan-300">JDK 21 (Gradle 8.7)</span>
+                </div>
+                <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex justify-between items-center">
+                  <span className="text-slate-400">Bytecode Target:</span>
+                  <span className="font-mono text-emerald-400">Java 17 (jvmTarget 17)</span>
+                </div>
+                <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex justify-between items-center">
                   <span className="text-slate-400">minSdk / targetSdk:</span>
                   <span className="font-mono text-cyan-300">minSdk 26 / targetSdk 34</span>
                 </div>
@@ -289,9 +297,43 @@ export default function App() {
             <div className="space-y-4">
               <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-400">Comando para compilar APK Debug:</span>
+                  <span className="text-xs font-semibold text-slate-400">1. Configurar JDK 21 no Windows (PowerShell):</span>
                   <button
-                    onClick={() => copyToClipboard('cd android && ./gradlew assembleDebug', 'build-cmd')}
+                    onClick={() => copyToClipboard('$env:JAVA_HOME="C:\\Program Files\\Android\\Android Studio\\jbr"; $env:Path="$env:JAVA_HOME\\bin;$env:Path"', 'ps-jdk')}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                  >
+                    {copiedText === 'ps-jdk' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copiedText === 'ps-jdk' ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                <pre className="p-3 bg-slate-900 text-cyan-300 font-mono text-xs rounded-lg overflow-x-auto">
+{`$env:JAVA_HOME="C:\\Program Files\\Android\\Android Studio\\jbr"
+$env:Path="$env:JAVA_HOME\\bin;$env:Path"
+java -version`}
+                </pre>
+              </div>
+
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400">2. Validar Gradle 8.7 sob JVM 21:</span>
+                  <button
+                    onClick={() => copyToClipboard('cd android && .\\gradlew.bat --version', 'ver-cmd')}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                  >
+                    {copiedText === 'ver-cmd' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copiedText === 'ver-cmd' ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                <pre className="p-3 bg-slate-900 text-cyan-300 font-mono text-xs rounded-lg overflow-x-auto">
+                  cd android && .\gradlew.bat --version
+                </pre>
+              </div>
+
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400">3. Compilar APK Debug (Windows):</span>
+                  <button
+                    onClick={() => copyToClipboard('cd android && .\\gradlew.bat clean assembleDebug', 'build-cmd')}
                     className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
                   >
                     {copiedText === 'build-cmd' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -299,7 +341,7 @@ export default function App() {
                   </button>
                 </div>
                 <pre className="p-3 bg-slate-900 text-cyan-300 font-mono text-xs rounded-lg overflow-x-auto">
-                  cd android && ./gradlew assembleDebug
+                  cd android && .\gradlew.bat clean assembleDebug
                 </pre>
               </div>
 

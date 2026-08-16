@@ -35,6 +35,7 @@ android {
             isDebuggable = true
         }
     }
+    // Bytecode target: Java 17 (Gradle runtime is JDK 21)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

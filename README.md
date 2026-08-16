@@ -43,13 +43,18 @@ O aplicativo utiliza exclusivamente o **Android NFC Reader Mode** (`enableReader
 
 ---
 
-## 3. Especificações e Versões de SDK
+## 3. Especificações e Ambiente de Build
 
 - **Dispositivo Alvo Inicial**: Motorola Moto G50 5G (Android 12)
 - **`minSdk`**: `26` (Android 8.0 Oreo ou superior - compatibilidade total com Android 12)
 - **`targetSdk`**: `34` (Android 14)
 - **`compileSdk`**: `34`
-- **Linguagem**: Kotlin 2.0.0
+- **Gradle Runtime / Gradle JVM**: **JDK 21** (Java 21)
+- **Gradle Wrapper**: `8.7`
+- **Android Gradle Plugin (AGP)**: `8.3.2`
+- **Linguagem**: Kotlin `2.0.0`
+- **Compatibilidade de Bytecode (`sourceCompatibility` / `targetCompatibility`)**: Java 17 (`JavaVersion.VERSION_17`)
+- **Kotlin `jvmTarget`**: `17`
 - **UI Toolkit**: Jetpack Compose com Material 3 (BOM 2024.06.00)
 - **Permissões Declaradas no `AndroidManifest.xml`**:
   - `android.permission.NFC`
@@ -59,30 +64,86 @@ O aplicativo utiliza exclusivamente o **Android NFC Reader Mode** (`enableReader
 
 ---
 
-## 4. Como Abrir e Compilar no Android Studio
+## 4. Configuração do Ambiente JDK 21 e Android Studio
 
-### Passo 1: Abrir o Projeto
-1. Abra o **Android Studio** (versão Iguana, Jellyfish, Koala ou superior).
-2. Na tela inicial, clique em **Open** (ou **File > Open**).
-3. Selecione o diretório `android` do projeto.
-4. Aguarde a sincronização inicial do Gradle (**Gradle Sync**).
+> ⚠️ **Importante sobre a versão do Java:** O Gradle 8.7 deve ser executado obrigatoriamente com o **JDK 21**. Se o seu sistema tiver outra versão padrão no PATH (como Java 25), o Gradle falhará com erro de versão incompatível. O código-fonte continua compilado para **Java 17**, mantendo total compatibilidade com o Android.
 
-### Passo 2: Gerar APK Debug
-1. No menu superior do Android Studio, clique em **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
-2. Ou execute no terminal integrado no diretório `android`:
-   ```bash
-   ./gradlew assembleDebug
-   ```
+### 4.1. Configuração no Android Studio (IDE)
 
-### Passo 3: Localização do APK Gerado
-O arquivo APK compilado estará localizado em:
+1. Abra o projeto pela pasta `android/`.
+2. Acesse: **File > Settings** (ou `Ctrl + Alt + S` no Windows / `Cmd + ,` no macOS).
+3. Navegue até: **Build, Execution, Deployment > Build Tools > Gradle**.
+4. No campo **Gradle JDK**, selecione:
+   - **Embedded JDK (JDK 21)** ou **jbr-21** (JetBrains Runtime fornecido pelo próprio Android Studio).
+5. Clique em **Apply** e em seguida em **Sync Project with Gradle Files**.
+
+---
+
+### 4.2. Configuração no Terminal Windows (PowerShell)
+
+Caso vá executar o build via linha de comando no terminal do Windows, garanta que a sessão use o JDK 21 (você pode usar o próprio JDK embutido no Android Studio sem precisar instalar nada externo):
+
+```powershell
+# 1. Definir JAVA_HOME apontando para o JDK 21 embutido do Android Studio
+$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+
+# 2. Confirmar que a versão ativa é o Java 21
+java -version
 ```
-android/app/build/outputs/apk/debug/app-debug.apk
+
+A saída esperada deve indicar **Java 21** (por exemplo: `openjdk version "21.0.x"` ou `JBR-21...`).
+
+---
+
+### 4.3. Validação do Gradle Wrapper
+
+No diretório `android/`, execute a verificação de versão:
+
+```powershell
+.\gradlew.bat --version
+```
+
+A saída esperada exibirá o Gradle 8.7 executando sob a JVM 21:
+
+```text
+------------------------------------------------------------
+Gradle 8.7
+------------------------------------------------------------
+
+Build time:   2024-03-22 15:52:46 UTC
+Revision:     650af95ecd9f9be97a5c0d983a14c33b8e886d6b
+
+Kotlin:       1.9.22
+Groovy:       3.0.17
+Ant:          Apache Ant(TM) version 1.10.13 compiled on January 4 2023
+JVM:          21.0.x (JetBrains s.r.o. / Oracle Corporation ...)
+OS:           Windows 11 / 10
 ```
 
 ---
 
-## 5. Como Instalar no Motorola Moto G50 5G
+## 5. Como Compilar e Gerar o APK Debug
+
+### Opção 1: Pela Interface do Android Studio
+1. No menu superior, clique em **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
+2. O arquivo gerado estará em:
+   ```
+   android/app/build/outputs/apk/debug/app-debug.apk
+   ```
+
+### Opção 2: Pelo Terminal (PowerShell / CMD no Windows)
+Navegue até a pasta `android` e execute:
+
+```powershell
+.\gradlew.bat clean assembleDebug
+```
+
+*(No Linux ou macOS: `./gradlew clean assembleDebug`)*
+
+---
+
+## 6. Como Instalar no Motorola Moto G50 5G
 
 ### Opção A: Instalação direta via USB (Recomendado)
 1. No Moto G50 5G, ative a **Depuração USB** em **Configurações > Opções do desenvolvedor > Depuração USB**.
